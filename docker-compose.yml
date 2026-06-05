@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: smart-elderly-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: smart_elderly
+    ports:
+      - "33207:3306"
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - smart-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: smart-elderly-redis
+    ports:
+      - "63207:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - smart-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build: ./backend
+    container_name: smart-elderly-backend
+    ports:
+      - "8207:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/smart_elderly?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - smart-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8080/actuator/health || curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  frontend:
+    build: ./frontend
+    container_name: smart-elderly-frontend
+    ports:
+      - "3207:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - smart-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:80 || curl -f http://localhost:80 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  smart-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
