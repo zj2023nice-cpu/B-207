@@ -1,0 +1,42 @@
+package com.smart.elderly.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
+import lombok.Data;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@TableName("shift_handover_records")
+public class ShiftHandoverRecord {
+    @TableId(type = IdType.AUTO)
+    private Integer id;
+
+    @NotBlank(message = "交班人不能为空")
+    private String handoverPerson;
+
+    @NotBlank(message = "接班人不能为空")
+    private String takeoverPerson;
+
+    @NotNull(message = "交接时间不能为空")
+    private LocalDateTime handoverTime;
+
+    private String keyElderly;
+
+    private String pendingWarningSummary;
+
+    private String remarks;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @TableField(exist = false)
+    private List<Integer> warningRecordIds;
+
+    @TableField(exist = false)
+    private List<HealthWarningRecord> relatedWarnings;
+}

@@ -49,6 +49,10 @@
             <el-icon><UserFilled /></el-icon>
             <span>访客来访登记</span>
           </el-menu-item>
+          <el-menu-item index="/shift-handover">
+            <el-icon><Tickets /></el-icon>
+            <span>交接班记录</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>

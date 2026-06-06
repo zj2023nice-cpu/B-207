@@ -65,6 +65,12 @@ const routes = [
                 name: 'VisitorVisit',
                 component: () => import('../views/VisitorVisit.vue'),
                 meta: { title: '访客来访登记' }
+            },
+            {
+                path: 'shift-handover',
+                name: 'ShiftHandover',
+                component: () => import('../views/ShiftHandover.vue'),
+                meta: { title: '交接班记录' }
             }
         ]
     }
