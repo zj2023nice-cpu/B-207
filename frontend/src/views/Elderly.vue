@@ -203,14 +203,25 @@
     <el-dialog v-model="tagDialogVisible" :title="isBatch ? '批量管理标签' : '管理标签 - ' + currentElderlyName" width="500px">
       <div class="tag-manage">
         <p style="margin-bottom: 16px; color: #606266;">请选择要{{ isBatch ? actionType === 'bind' ? '绑定' : '解绑' : '绑定/解绑' }}的标签：</p>
+        <el-alert 
+          v-if="!isBatch && disabledTagCount > 0" 
+          title="提示：以下标签中包含已停用的标签，您仍可取消绑定以清理数据" 
+          type="info" 
+          :closable="false" 
+          style="margin-bottom: 16px;"
+          size="small"
+        />
         <el-checkbox-group v-model="selectedTagIds">
           <el-checkbox 
-            v-for="tag in enabledTagList" 
+            v-for="tag in isBatch ? enabledTagList : tagList" 
             :key="tag.id" 
             :label="tag.id"
             style="margin-bottom: 12px; display: block;"
           >
-            <el-tag :color="tag.color" effect="dark" size="small">{{ tag.name }}</el-tag>
+            <el-tag :color="tag.color" effect="dark" size="small" :disabled="tag.status === '停用'">
+              {{ tag.name }}
+            </el-tag>
+            <span v-if="tag.status === '停用'" style="margin-left: 4px; color: #F56C6C; font-size: 12px;">(已停用)</span>
             <span style="margin-left: 8px; color: #909399; font-size: 12px;">{{ tag.remark || '' }}</span>
           </el-checkbox>
         </el-checkbox-group>
@@ -242,6 +253,7 @@ const currentDetail = ref(null)
 const currentElderlyId = ref(null)
 const currentElderlyName = ref('')
 const selectedTagIds = ref([])
+const originalTagIds = ref([])
 const isBatch = ref(false)
 const actionType = ref('bind')
 
@@ -266,6 +278,11 @@ const rules = {
 
 const enabledTagList = computed(() => {
   return tagList.value.filter(tag => tag.status === '启用')
+})
+
+const disabledTagCount = computed(() => {
+  const disabledTags = tagList.value.filter(tag => tag.status === '停用')
+  return disabledTags.filter(tag => originalTagIds.value.includes(tag.id)).length
 })
 
 const getStatusType = (status) => {
@@ -345,7 +362,9 @@ const handleManageTags = async (elderly) => {
   currentElderlyName.value = elderly.name
   try {
     const res = await request.get(`/elderly-tags/elderly/${elderly.id}`)
-    selectedTagIds.value = res.data.map(tag => tag.id)
+    const tagIds = res.data.map(tag => tag.id)
+    originalTagIds.value = [...tagIds]
+    selectedTagIds.value = [...tagIds]
     tagDialogVisible.value = true
   } catch (error) {
     console.error(error)
@@ -364,27 +383,54 @@ const handleBatchAction = async (command) => {
 }
 
 const handleTagSave = async () => {
-  if (selectedTagIds.value.length === 0) {
-    ElMessage.warning('请选择标签')
-    return
-  }
-  
   const elderlyIds = isBatch.value 
     ? selectedRows.value.map(item => item.elderly.id)
     : [currentElderlyId.value]
   
   try {
-    if (isBatch.value && actionType.value === 'unbind') {
-      await request.post('/elderly-tags/unbind', {
-        elderlyIds,
-        tagIds: selectedTagIds.value
-      })
+    if (isBatch.value) {
+      if (selectedTagIds.value.length === 0) {
+        ElMessage.warning('请选择标签')
+        return
+      }
+      if (actionType.value === 'unbind') {
+        await request.post('/elderly-tags/unbind', {
+          elderlyIds,
+          tagIds: selectedTagIds.value
+        })
+      } else {
+        await request.post('/elderly-tags/bind', {
+          elderlyIds,
+          tagIds: selectedTagIds.value
+        })
+      }
     } else {
-      await request.post('/elderly-tags/bind', {
-        elderlyIds,
-        tagIds: selectedTagIds.value
-      })
+      const toBind = selectedTagIds.value.filter(id => !originalTagIds.value.includes(id))
+      const toUnbind = originalTagIds.value.filter(id => !selectedTagIds.value.includes(id))
+      
+      if (toBind.length === 0 && toUnbind.length === 0) {
+        ElMessage.info('未修改标签')
+        tagDialogVisible.value = false
+        return
+      }
+      
+      const requests = []
+      if (toBind.length > 0) {
+        requests.push(request.post('/elderly-tags/bind', {
+          elderlyIds,
+          tagIds: toBind
+        }))
+      }
+      if (toUnbind.length > 0) {
+        requests.push(request.post('/elderly-tags/unbind', {
+          elderlyIds,
+          tagIds: toUnbind
+        }))
+      }
+      
+      await Promise.all(requests)
     }
+    
     ElMessage.success('操作成功')
     tagDialogVisible.value = false
     loadData()
