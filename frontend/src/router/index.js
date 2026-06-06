@@ -53,6 +53,12 @@ const routes = [
                 name: 'OperationLog',
                 component: () => import('../views/OperationLog.vue'),
                 meta: { title: '操作日志' }
+            },
+            {
+                path: 'nursing-observation',
+                name: 'NursingObservation',
+                component: () => import('../views/NursingObservation.vue'),
+                meta: { title: '护理观察记录' }
             }
         ]
     }

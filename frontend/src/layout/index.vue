@@ -41,6 +41,10 @@
             <el-icon><Document /></el-icon>
             <span>操作日志</span>
           </el-menu-item>
+          <el-menu-item index="/nursing-observation">
+            <el-icon><Notebook /></el-icon>
+            <span>护理观察记录</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>

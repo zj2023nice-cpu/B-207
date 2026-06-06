@@ -75,11 +75,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="280">
+        <el-table-column label="操作" width="380">
           <template #default="scope">
             <el-button size="small" @click="handleView(scope.row)">查看</el-button>
             <el-button size="small" @click="handleEdit(scope.row.elderly)">编辑</el-button>
             <el-button size="small" type="warning" @click="handleManageTags(scope.row.elderly)">管理标签</el-button>
+            <el-button size="small" type="primary" @click="goToNursingObservation(scope.row.elderly)">护理记录</el-button>
             <el-button size="small" type="danger" @click="handleDelete(scope.row.elderly.id)">删除</el-button>
           </template>
         </el-table-column>
@@ -196,6 +197,7 @@
         </el-descriptions>
       </div>
       <template #footer>
+        <el-button type="primary" @click="goToNursingObservationFromDetail">查看护理记录</el-button>
         <el-button @click="detailVisible = false">关闭</el-button>
       </template>
     </el-dialog>
@@ -236,8 +238,11 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+
+const router = useRouter()
 
 const loading = ref(false)
 const tableData = ref([])
@@ -460,6 +465,22 @@ const handleSave = async () => {
   ElMessage.success('操作成功')
   dialogVisible.value = false
   loadData()
+}
+
+const goToNursingObservation = (elderly) => {
+  router.push({
+    path: '/nursing-observation',
+    query: { elderlyId: elderly.id }
+  })
+}
+
+const goToNursingObservationFromDetail = () => {
+  if (currentDetail.value && currentDetail.value.elderly) {
+    router.push({
+      path: '/nursing-observation',
+      query: { elderlyId: currentDetail.value.elderly.id }
+    })
+  }
 }
 </script>
 
