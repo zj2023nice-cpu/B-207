@@ -48,4 +48,9 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         return Result.error(message);
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Result<String> handleIllegalArgumentException(IllegalArgumentException e) {
+        return Result.error(e.getMessage());
+    }
 }

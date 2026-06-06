@@ -63,6 +63,7 @@ public class ShiftHandoverRecordService extends ServiceImpl<ShiftHandoverRecordM
 
     @Transactional
     public ShiftHandoverRecord create(ShiftHandoverCreateDTO dto) {
+        validateDTO(dto);
         ShiftHandoverRecord record = new ShiftHandoverRecord();
         BeanUtils.copyProperties(dto, record);
         record.setCreatedAt(LocalDateTime.now());
@@ -84,6 +85,7 @@ public class ShiftHandoverRecordService extends ServiceImpl<ShiftHandoverRecordM
 
     @Transactional
     public boolean update(Integer id, ShiftHandoverCreateDTO dto) {
+        validateDTO(dto);
         ShiftHandoverRecord record = this.getById(id);
         if (record == null) {
             return false;
@@ -118,6 +120,18 @@ public class ShiftHandoverRecordService extends ServiceImpl<ShiftHandoverRecordM
 
     public List<Integer> getWarningRecordIdsByHandoverId(Integer handoverId) {
         return relationMapper.findWarningRecordIdsByHandoverId(handoverId);
+    }
+
+    private void validateDTO(ShiftHandoverCreateDTO dto) {
+        if (dto.getKeyElderly() == null || dto.getKeyElderly().trim().isEmpty()) {
+            throw new IllegalArgumentException("重点关注老人不能为空");
+        }
+        if (dto.getPendingWarningSummary() == null || dto.getPendingWarningSummary().trim().isEmpty()) {
+            throw new IllegalArgumentException("待跟进预警摘要不能为空");
+        }
+        if (dto.getRemarks() == null || dto.getRemarks().trim().isEmpty()) {
+            throw new IllegalArgumentException("备注不能为空");
+        }
     }
 
     public String generateWarningSummary(List<Integer> warningIds) {

@@ -7,12 +7,15 @@ import com.smart.elderly.entity.ShiftHandoverRecord;
 import com.smart.elderly.service.ShiftHandoverRecordService;
 import com.smart.elderly.vo.ShiftHandoverDetailVO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shift-handover")
+@Validated
 public class ShiftHandoverRecordController {
 
     @Autowired
@@ -43,13 +46,13 @@ public class ShiftHandoverRecordController {
     }
 
     @PostMapping("/add")
-    public Result<ShiftHandoverRecord> add(@RequestBody ShiftHandoverCreateDTO dto) {
+    public Result<ShiftHandoverRecord> add(@Valid @RequestBody ShiftHandoverCreateDTO dto) {
         ShiftHandoverRecord record = handoverRecordService.create(dto);
         return Result.success(record);
     }
 
     @PutMapping("/update/{id}")
-    public Result<String> update(@PathVariable Integer id, @RequestBody ShiftHandoverCreateDTO dto) {
+    public Result<String> update(@PathVariable Integer id, @Valid @RequestBody ShiftHandoverCreateDTO dto) {
         if (id == null) {
             return Result.error("ID不能为空");
         }
