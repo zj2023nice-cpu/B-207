@@ -45,6 +45,10 @@
             <el-icon><Notebook /></el-icon>
             <span>护理观察记录</span>
           </el-menu-item>
+          <el-menu-item index="/visitor-visit">
+            <el-icon><UserFilled /></el-icon>
+            <span>访客来访登记</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>
