@@ -116,6 +116,10 @@ public class ShiftHandoverRecordService extends ServiceImpl<ShiftHandoverRecordM
         return this.removeById(id);
     }
 
+    public List<Integer> getWarningRecordIdsByHandoverId(Integer handoverId) {
+        return relationMapper.findWarningRecordIdsByHandoverId(handoverId);
+    }
+
     public String generateWarningSummary(List<Integer> warningIds) {
         if (warningIds == null || warningIds.isEmpty()) {
             return "";

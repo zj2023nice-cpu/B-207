@@ -74,6 +74,14 @@ public class ShiftHandoverRecordController {
         }
     }
 
+    @GetMapping("/warning-ids/{id}")
+    public Result<List<Integer>> getWarningIds(@PathVariable Integer id) {
+        if (id == null) {
+            return Result.error("ID不能为空");
+        }
+        return Result.success(handoverRecordService.getWarningRecordIdsByHandoverId(id));
+    }
+
     @PostMapping("/generate-summary")
     public Result<String> generateSummary(@RequestBody Map<String, List<Integer>> params) {
         List<Integer> warningIds = params.get("warningIds");

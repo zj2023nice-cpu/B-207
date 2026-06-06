@@ -49,8 +49,27 @@
             </div>
           </div>
         </el-card>
+        <div v-if="historicalWarnings.length > 0" style="margin-top: 10px;">
+          <div style="color: #909399; font-size: 12px; margin-bottom: 8px;">
+            历史关联预警（已处理/已读）：
+          </div>
+          <el-card style="max-height: 150px; overflow-y: auto; background-color: #f5f7fa;">
+            <div v-for="warning in historicalWarnings" :key="warning.id" class="warning-item">
+              <el-checkbox :value="warning.id" v-model="selectedWarningIds">
+                <span class="warning-elderly">{{ warning.elderlyName || '未知老人' }}</span>
+                <el-tag :type="getWarningLevelType(warning.warningLevel)" size="small" style="margin-left: 10px;">
+                  {{ warning.warningLevel }}
+                </el-tag>
+                <span class="warning-message" style="margin-left: 10px;">{{ warning.warningMessage }}</span>
+                <el-tag :type="getStatusType(warning.status)" size="small" style="margin-left: 10px;">
+                  {{ getStatusText(warning.status) }}
+                </el-tag>
+              </el-checkbox>
+            </div>
+          </el-card>
+        </div>
       </el-form-item>
-      <el-form-item label="待跟进预警摘要">
+      <el-form-item label="待跟进预警摘要" prop="pendingWarningSummary">
         <el-input 
           v-model="form.pendingWarningSummary" 
           type="textarea" 
@@ -73,7 +92,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import request from '../utils/request'
 import { ElMessage } from 'element-plus'
 
@@ -92,6 +111,7 @@ const dialogVisible = computed({
 const formRef = ref(null)
 const submitting = ref(false)
 const pendingWarnings = ref([])
+const historicalWarnings = ref([])
 const selectedWarningIds = ref([])
 const selectAll = ref(false)
 const isIndeterminate = ref(false)
@@ -117,6 +137,15 @@ const rules = {
   ],
   handoverTime: [
     { required: true, message: '请选择交接时间', trigger: 'change' }
+  ],
+  keyElderly: [
+    { required: true, message: '请输入重点关注老人', trigger: 'blur' }
+  ],
+  pendingWarningSummary: [
+    { required: true, message: '请输入待跟进预警摘要', trigger: 'blur' }
+  ],
+  remarks: [
+    { required: true, message: '请输入备注', trigger: 'blur' }
   ]
 }
 
@@ -129,6 +158,24 @@ const getWarningLevelType = (level) => {
   return map[level] || 'info'
 }
 
+const getStatusType = (status) => {
+  const map = {
+    PENDING: 'danger',
+    READ: 'warning',
+    HANDLED: 'success'
+  }
+  return map[status] || 'info'
+}
+
+const getStatusText = (status) => {
+  const map = {
+    PENDING: '待处理',
+    READ: '已读',
+    HANDLED: '已处理'
+  }
+  return map[status] || status
+}
+
 const loadPendingWarnings = async () => {
   try {
     const res = await request.get('/warning/record/pending')
@@ -138,9 +185,41 @@ const loadPendingWarnings = async () => {
   }
 }
 
+const loadRelatedWarningIds = async (handoverId) => {
+  try {
+    const res = await request.get(`/shift-handover/warning-ids/${handoverId}`)
+    const relatedIds = res.data || []
+    
+    const allWarningIds = [...new Set([
+      ...pendingWarnings.value.map(w => w.id),
+      ...relatedIds
+    ])]
+    
+    const historicalIds = relatedIds.filter(id => 
+      !pendingWarnings.value.some(w => w.id === id)
+    )
+    
+    if (historicalIds.length > 0) {
+      const detailRes = await request.get(`/shift-handover/detail/${handoverId}`)
+      const allWarnings = detailRes.data?.relatedWarnings || []
+      historicalWarnings.value = allWarnings.filter(w => historicalIds.includes(w.id))
+    } else {
+      historicalWarnings.value = []
+    }
+    
+    await nextTick()
+    selectedWarningIds.value = relatedIds
+  } catch (error) {
+    console.error(error)
+  }
+}
+
 const handleSelectAll = (val) => {
   if (val) {
-    selectedWarningIds.value = pendingWarnings.value.map(w => w.id)
+    selectedWarningIds.value = [
+      ...pendingWarnings.value.map(w => w.id),
+      ...historicalWarnings.value.map(w => w.id)
+    ]
     isIndeterminate.value = false
   } else {
     selectedWarningIds.value = []
@@ -149,10 +228,14 @@ const handleSelectAll = (val) => {
 }
 
 watch(selectedWarningIds, (val) => {
+  const allAvailableIds = [
+    ...pendingWarnings.value.map(w => w.id),
+    ...historicalWarnings.value.map(w => w.id)
+  ]
   if (val.length === 0) {
     selectAll.value = false
     isIndeterminate.value = false
-  } else if (val.length === pendingWarnings.value.length) {
+  } else if (val.length === allAvailableIds.length && allAvailableIds.length > 0) {
     selectAll.value = true
     isIndeterminate.value = false
   } else {
@@ -187,8 +270,12 @@ const resetForm = () => {
     warningRecordIds: []
   }
   selectedWarningIds.value = []
+  historicalWarnings.value = []
   selectAll.value = false
   isIndeterminate.value = false
+  if (formRef.value) {
+    formRef.value.resetFields()
+  }
 }
 
 const fillForm = (record) => {
@@ -203,13 +290,15 @@ const fillForm = (record) => {
   }
 }
 
-watch(() => props.visible, (val) => {
+watch(() => props.visible, async (val) => {
   if (val) {
-    loadPendingWarnings()
+    resetForm()
+    await loadPendingWarnings()
+    
     if (isEdit.value && props.record) {
       fillForm(props.record)
+      await loadRelatedWarningIds(props.record.id)
     } else {
-      resetForm()
       const now = new Date()
       const formatted = now.getFullYear() + '-' +
         String(now.getMonth() + 1).padStart(2, '0') + '-' +
@@ -218,6 +307,11 @@ watch(() => props.visible, (val) => {
         String(now.getMinutes()).padStart(2, '0') + ':' +
         String(now.getSeconds()).padStart(2, '0')
       form.value.handoverTime = formatted
+    }
+    
+    await nextTick()
+    if (formRef.value) {
+      formRef.value.clearValidate()
     }
   }
 })

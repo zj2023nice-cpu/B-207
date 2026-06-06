@@ -25,10 +25,13 @@ public class ShiftHandoverRecord {
     @NotNull(message = "交接时间不能为空")
     private LocalDateTime handoverTime;
 
+    @NotBlank(message = "重点关注老人不能为空")
     private String keyElderly;
 
+    @NotBlank(message = "待跟进预警摘要不能为空")
     private String pendingWarningSummary;
 
+    @NotBlank(message = "备注不能为空")
     private String remarks;
 
     private LocalDateTime createdAt;
