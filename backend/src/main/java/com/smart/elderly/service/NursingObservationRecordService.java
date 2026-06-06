@@ -25,6 +25,10 @@ public class NursingObservationRecordService extends ServiceImpl<NursingObservat
             throw new IllegalArgumentException("老人ID不能为空");
         }
 
+        if (record.getRemark() == null || record.getRemark().trim().isEmpty()) {
+            throw new IllegalArgumentException("备注内容不能为空");
+        }
+
         Elderly elderly = elderlyService.getById(record.getElderlyId());
         if (elderly == null) {
             throw new IllegalArgumentException("老人不存在，ID: " + record.getElderlyId());

@@ -101,7 +101,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="备注">
+        <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" :rows="4" placeholder="请输入观察备注" />
         </el-form-item>
         <el-form-item label="需要跟进">
@@ -155,6 +155,9 @@ const rules = {
   ],
   observationType: [
     { required: true, message: '请选择观察类型', trigger: 'change' }
+  ],
+  remark: [
+    { required: true, message: '请输入备注内容', trigger: 'blur' }
   ]
 }
 

@@ -27,6 +27,7 @@ public class NursingObservationRecord {
     @NotBlank(message = "观察类型不能为空")
     private String observationType;
 
+    @NotBlank(message = "备注内容不能为空")
     private String remark;
 
     @NotNull(message = "是否需要后续跟进不能为空")
