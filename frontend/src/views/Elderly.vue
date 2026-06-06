@@ -4,47 +4,83 @@
       <template #header>
         <div class="card-header">
           <span>老人信息列表</span>
-          <el-button type="primary" @click="handleAdd">新增老人</el-button>
-        </div>
-      </template>
-      <el-table :data="tableData" border style="width: 100%" v-loading="loading">
-        <el-table-column prop="name" label="姓名" />
-        <el-table-column prop="age" label="年龄" />
-        <el-table-column prop="gender" label="性别" />
-        <el-table-column prop="phone" label="联系电话" />
-        <el-table-column prop="address" label="居住地址" min-width="150" />
-        <el-table-column label="紧急联系人" min-width="120">
-          <template #default="scope">
-            <div v-if="scope.row.emergencyContactName">
-              <div>{{ scope.row.emergencyContactName }}</div>
-              <div class="small-text">{{ scope.row.emergencyContactRelation }}</div>
-              <div class="small-text">{{ scope.row.emergencyContactPhone }}</div>
-            </div>
-            <span v-else class="text-gray">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="scope">
-            <el-tag :type="getStatusType(scope.row.status)" size="small">
-              {{ scope.row.status || '正常' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200">
-          <template #default="scope">
-            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-dropdown @command="(command) => handleStatusChange(scope.row, command)" trigger="click">
-              <el-button size="small" type="warning">修改状态</el-button>
+          <div class="header-actions">
+            <el-select v-model="selectedTagId" placeholder="按标签筛选" style="width: 180px; margin-right: 10px" clearable @change="loadData">
+              <el-option label="全部老人" :value="null" />
+              <el-option 
+                v-for="tag in tagList" 
+                :key="tag.id" 
+                :label="tag.name" 
+                :value="tag.id"
+              >
+                <el-tag :color="tag.color" effect="dark" size="small">{{ tag.name }}</el-tag>
+              </el-option>
+            </el-select>
+            <el-input 
+              v-model="keyword" 
+              placeholder="搜索姓名" 
+              style="width: 200px; margin-right: 10px" 
+              clearable 
+              @keyup.enter="loadData"
+            />
+            <el-button type="primary" @click="handleAdd">新增老人</el-button>
+            <el-dropdown @command="handleBatchAction" trigger="click" :disabled="selectedRows.length === 0">
+              <el-button type="success" :disabled="selectedRows.length === 0">
+                批量操作<el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="正常">正常</el-dropdown-item>
-                  <el-dropdown-item command="住院">住院</el-dropdown-item>
-                  <el-dropdown-item command="外出">外出</el-dropdown-item>
-                  <el-dropdown-item command="失联" divided>失联</el-dropdown-item>
+                  <el-dropdown-item command="bindTag">批量绑定标签</el-dropdown-item>
+                  <el-dropdown-item command="unbindTag">批量解绑标签</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-            <el-button size="small" type="danger" @click="handleDelete(scope.row.id)">删除</el-button>
+          </div>
+        </div>
+      </template>
+      <el-table 
+        :data="tableData" 
+        border 
+        style="width: 100%" 
+        v-loading="loading"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="elderly.name" label="姓名" width="100" />
+        <el-table-column prop="elderly.age" label="年龄" width="80" />
+        <el-table-column prop="elderly.gender" label="性别" width="80" />
+        <el-table-column prop="elderly.phone" label="联系电话" width="130" />
+        <el-table-column prop="elderly.address" label="居住地址" min-width="150" />
+        <el-table-column label="标签" min-width="200">
+          <template #default="scope">
+            <div class="tag-list">
+              <el-tag 
+                v-for="tag in scope.row.tags" 
+                :key="tag.id" 
+                :color="tag.color" 
+                effect="dark" 
+                size="small"
+                style="margin-right: 4px; margin-bottom: 4px;"
+              >
+                {{ tag.name }}
+              </el-tag>
+              <span v-if="!scope.row.tags || scope.row.tags.length === 0" class="text-gray">-</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="elderly.status" label="状态" width="100">
+          <template #default="scope">
+            <el-tag :type="getStatusType(scope.row.elderly.status)" size="small">
+              {{ scope.row.elderly.status || '正常' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="280">
+          <template #default="scope">
+            <el-button size="small" @click="handleView(scope.row)">查看</el-button>
+            <el-button size="small" @click="handleEdit(scope.row.elderly)">编辑</el-button>
+            <el-button size="small" type="warning" @click="handleManageTags(scope.row.elderly)">管理标签</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(scope.row.elderly.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -125,18 +161,90 @@
         <el-button type="primary" @click="handleSave">确定</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="detailVisible" title="老人详情" width="600px">
+      <div v-if="currentDetail" class="detail-content">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="姓名">{{ currentDetail.elderly.name }}</el-descriptions-item>
+          <el-descriptions-item label="年龄">{{ currentDetail.elderly.age }}</el-descriptions-item>
+          <el-descriptions-item label="性别">{{ currentDetail.elderly.gender }}</el-descriptions-item>
+          <el-descriptions-item label="联系电话">{{ currentDetail.elderly.phone }}</el-descriptions-item>
+          <el-descriptions-item label="居住地址" :span="2">{{ currentDetail.elderly.address }}</el-descriptions-item>
+          <el-descriptions-item label="紧急联系人">{{ currentDetail.elderly.emergencyContactName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="关系">{{ currentDetail.elderly.emergencyContactRelation || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="联系电话">{{ currentDetail.elderly.emergencyContactPhone || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="getStatusType(currentDetail.elderly.status)" size="small">
+              {{ currentDetail.elderly.status || '正常' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="标签" :span="2">
+            <div class="tag-list">
+              <el-tag 
+                v-for="tag in currentDetail.tags" 
+                :key="tag.id" 
+                :color="tag.color" 
+                effect="dark" 
+                size="small"
+                style="margin-right: 4px; margin-bottom: 4px;"
+              >
+                {{ tag.name }}
+              </el-tag>
+              <span v-if="!currentDetail.tags || currentDetail.tags.length === 0" class="text-gray">-</span>
+            </div>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <template #footer>
+        <el-button @click="detailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="tagDialogVisible" :title="isBatch ? '批量管理标签' : '管理标签 - ' + currentElderlyName" width="500px">
+      <div class="tag-manage">
+        <p style="margin-bottom: 16px; color: #606266;">请选择要{{ isBatch ? actionType === 'bind' ? '绑定' : '解绑' : '绑定/解绑' }}的标签：</p>
+        <el-checkbox-group v-model="selectedTagIds">
+          <el-checkbox 
+            v-for="tag in enabledTagList" 
+            :key="tag.id" 
+            :label="tag.id"
+            style="margin-bottom: 12px; display: block;"
+          >
+            <el-tag :color="tag.color" effect="dark" size="small">{{ tag.name }}</el-tag>
+            <span style="margin-left: 8px; color: #909399; font-size: 12px;">{{ tag.remark || '' }}</span>
+          </el-checkbox>
+        </el-checkbox-group>
+      </div>
+      <template #footer>
+        <el-button @click="tagDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleTagSave">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import request from '../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loading = ref(false)
 const tableData = ref([])
+const tagList = ref([])
+const selectedTagId = ref(null)
+const keyword = ref('')
+const selectedRows = ref([])
 const dialogVisible = ref(false)
+const detailVisible = ref(false)
+const tagDialogVisible = ref(false)
 const formRef = ref(null)
+const currentDetail = ref(null)
+const currentElderlyId = ref(null)
+const currentElderlyName = ref('')
+const selectedTagIds = ref([])
+const isBatch = ref(false)
+const actionType = ref('bind')
+
 const form = ref({
   id: null,
   name: '',
@@ -156,6 +264,10 @@ const rules = {
   ]
 }
 
+const enabledTagList = computed(() => {
+  return tagList.value.filter(tag => tag.status === '启用')
+})
+
 const getStatusType = (status) => {
   const statusMap = {
     '正常': 'success',
@@ -166,10 +278,24 @@ const getStatusType = (status) => {
   return statusMap[status] || 'info'
 }
 
+const loadTags = async () => {
+  try {
+    const res = await request.get('/elderly-tags/list')
+    tagList.value = res.data
+  } catch (error) {
+    console.error(error)
+  }
+}
+
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await request.get('/elderly/list')
+    const res = await request.get('/elderly-tags/elderly/list-by-tag', {
+      params: { 
+        tagId: selectedTagId.value,
+        keyword: keyword.value
+      }
+    })
     tableData.value = res.data
   } catch (error) {
     console.error(error)
@@ -178,7 +304,14 @@ const loadData = async () => {
   }
 }
 
-onMounted(loadData)
+onMounted(() => {
+  loadTags()
+  loadData()
+})
+
+const handleSelectionChange = (selection) => {
+  selectedRows.value = selection
+}
 
 const handleAdd = () => {
   form.value = { 
@@ -201,23 +334,63 @@ const handleEdit = (row) => {
   dialogVisible.value = true
 }
 
-const handleStatusChange = async (row, newStatus) => {
+const handleView = (row) => {
+  currentDetail.value = row
+  detailVisible.value = true
+}
+
+const handleManageTags = async (elderly) => {
+  isBatch.value = false
+  currentElderlyId.value = elderly.id
+  currentElderlyName.value = elderly.name
   try {
-    await ElMessageBox.confirm(
-      `确定将 ${row.name} 的状态修改为 "${newStatus}" 吗？`,
-      '确认修改',
-      { type: 'warning' }
-    )
-    
-    const updateData = { id: row.id, status: newStatus }
-    await request.put('/elderly/update', updateData)
-    ElMessage.success('状态修改成功')
+    const res = await request.get(`/elderly-tags/elderly/${elderly.id}`)
+    selectedTagIds.value = res.data.map(tag => tag.id)
+    tagDialogVisible.value = true
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const handleBatchAction = async (command) => {
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请先选择老人')
+    return
+  }
+  isBatch.value = true
+  actionType.value = command === 'bindTag' ? 'bind' : 'unbind'
+  selectedTagIds.value = []
+  tagDialogVisible.value = true
+}
+
+const handleTagSave = async () => {
+  if (selectedTagIds.value.length === 0) {
+    ElMessage.warning('请选择标签')
+    return
+  }
+  
+  const elderlyIds = isBatch.value 
+    ? selectedRows.value.map(item => item.elderly.id)
+    : [currentElderlyId.value]
+  
+  try {
+    if (isBatch.value && actionType.value === 'unbind') {
+      await request.post('/elderly-tags/unbind', {
+        elderlyIds,
+        tagIds: selectedTagIds.value
+      })
+    } else {
+      await request.post('/elderly-tags/bind', {
+        elderlyIds,
+        tagIds: selectedTagIds.value
+      })
+    }
+    ElMessage.success('操作成功')
+    tagDialogVisible.value = false
     loadData()
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error(error)
-      ElMessage.error('状态修改失败')
-    }
+    console.error(error)
+    ElMessage.error('操作失败')
   }
 }
 
@@ -251,6 +424,16 @@ const handleSave = async () => {
   align-items: center;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+}
+
 .small-text {
   font-size: 12px;
   color: #909399;
@@ -258,5 +441,14 @@ const handleSave = async () => {
 
 .text-gray {
   color: #c0c4cc;
+}
+
+.detail-content {
+  padding: 10px 0;
+}
+
+.tag-manage {
+  max-height: 400px;
+  overflow-y: auto;
 }
 </style>

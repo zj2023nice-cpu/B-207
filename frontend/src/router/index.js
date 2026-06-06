@@ -43,6 +43,12 @@ const routes = [
                 meta: { title: '通知消息' }
             },
             {
+                path: 'elderly-tag',
+                name: 'ElderlyTag',
+                component: () => import('../views/ElderlyTag.vue'),
+                meta: { title: '标签管理' }
+            },
+            {
                 path: 'operation-log',
                 name: 'OperationLog',
                 component: () => import('../views/OperationLog.vue'),
