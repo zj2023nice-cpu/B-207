@@ -40,14 +40,21 @@
             <span>阈值配置</span>
           </el-menu-item>
           <el-menu-item index="/notification">
-            <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notification-badge">
+            <el-badge :value="displayUnreadCount" :hidden="displayUnreadCount === 0" class="notification-badge">
               <el-icon><Bell /></el-icon>
               <span>通知消息</span>
+              <el-tag v-if="inDoNotDisturb" type="warning" size="small" effect="dark" style="margin-left: 5px;">
+                <el-icon><Moon /></el-icon>
+              </el-tag>
             </el-badge>
           </el-menu-item>
           <el-menu-item index="/notification-subscription">
             <el-icon><Setting /></el-icon>
             <span>订阅规则</span>
+          </el-menu-item>
+          <el-menu-item index="/notification-preference">
+            <el-icon><BellFilled /></el-icon>
+            <span>消息偏好</span>
           </el-menu-item>
           <el-menu-item index="/system-announcement">
             <el-badge :value="announcementUnreadCount" :hidden="announcementUnreadCount === 0" class="notification-badge">
@@ -87,8 +94,11 @@
             <span>{{ $route.meta.title }}</span>
           </div>
           <div class="header-right">
-            <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="header-notification" @click="goToNotification">
+            <el-badge :value="displayUnreadCount" :hidden="displayUnreadCount === 0" class="header-notification" @click="goToNotification">
               <el-icon class="notification-icon"><Bell /></el-icon>
+              <el-tag v-if="inDoNotDisturb" type="warning" size="small" effect="dark" style="position: absolute; top: -8px; right: -8px; transform: scale(0.8);">
+                <el-icon><Moon /></el-icon>
+              </el-tag>
             </el-badge>
             <el-dropdown @command="handleCommand">
               <span class="el-dropdown-link">
@@ -120,15 +130,21 @@ const router = useRouter()
 const username = ref('管理员')
 const isAdmin = ref(false)
 const unreadCount = ref(0)
+const displayUnreadCount = ref(0)
+const inDoNotDisturb = ref(false)
 const announcementUnreadCount = ref(0)
 let timer = null
 
 const loadUnreadCount = async () => {
   try {
-    const res = await request.get('/notification/count/with-subscription')
-    unreadCount.value = res.data?.unreadCount || 0
+    const res = await request.get('/notification/count/with-preference')
+    unreadCount.value = res.data?.totalUnread || 0
+    displayUnreadCount.value = res.data?.displayUnread || 0
+    inDoNotDisturb.value = res.data?.inDoNotDisturb || false
   } catch {
     unreadCount.value = 0
+    displayUnreadCount.value = 0
+    inDoNotDisturb.value = false
   }
 }
 

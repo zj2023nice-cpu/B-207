@@ -157,4 +157,107 @@ public interface NotificationMapper extends BaseMapper<Notification> {
             @Param("onlyAbnormal") Boolean onlyAbnormal,
             @Param("onlyFollowedElderly") Boolean onlyFollowedElderly,
             @Param("followedElderlyIds") List<Integer> followedElderlyIds);
+
+    @Select("<script>" +
+            "SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
+            "CASE WHEN nr.id IS NOT NULL THEN 'READ' ELSE 'UNREAD' END AS status, n.created_at, n.read_at, e.name AS elderly_name, " +
+            "n.invalidated, n.invalidated_at, n.invalidated_reason, " +
+            "CASE WHEN n.notification_type IN " +
+            "<foreach item='type' collection='highPriorityTypes' open='(' separator=',' close=')'>" +
+            "  #{type}" +
+            "</foreach>" +
+            " THEN TRUE ELSE FALSE END AS high_priority " +
+            "FROM notifications n " +
+            "LEFT JOIN elderly e ON n.elderly_id = e.id " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            "AND (n.invalidated IS NULL OR n.invalidated = FALSE) " +
+            "<if test='enabledTypes != null and enabledTypes.size() > 0'>" +
+            "  AND n.notification_type IN " +
+            "  <foreach item='type' collection='enabledTypes' open='(' separator=',' close=')'>" +
+            "    #{type}" +
+            "  </foreach>" +
+            "</if>" +
+            "ORDER BY " +
+            "  CASE WHEN n.notification_type IN " +
+            "  <foreach item='type' collection='highPriorityTypes' open='(' separator=',' close=')'>" +
+            "    #{type}" +
+            "  </foreach>" +
+            "  THEN 0 ELSE 1 END, " +
+            "  n.created_at DESC" +
+            "</script>")
+    List<Notification> findAllWithPreference(
+            @Param("userId") Integer userId,
+            @Param("enabledTypes") List<String> enabledTypes,
+            @Param("highPriorityTypes") List<String> highPriorityTypes);
+
+    @Select("<script>" +
+            "SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
+            "'UNREAD' AS status, n.created_at, n.read_at, e.name AS elderly_name, " +
+            "n.invalidated, n.invalidated_at, n.invalidated_reason, " +
+            "CASE WHEN n.notification_type IN " +
+            "<foreach item='type' collection='highPriorityTypes' open='(' separator=',' close=')'>" +
+            "  #{type}" +
+            "</foreach>" +
+            " THEN TRUE ELSE FALSE END AS high_priority " +
+            "FROM notifications n " +
+            "LEFT JOIN elderly e ON n.elderly_id = e.id " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            "AND (n.invalidated IS NULL OR n.invalidated = FALSE) " +
+            "<if test='enabledTypes != null and enabledTypes.size() > 0'>" +
+            "  AND n.notification_type IN " +
+            "  <foreach item='type' collection='enabledTypes' open='(' separator=',' close=')'>" +
+            "    #{type}" +
+            "  </foreach>" +
+            "</if>" +
+            "ORDER BY " +
+            "  CASE WHEN n.notification_type IN " +
+            "  <foreach item='type' collection='highPriorityTypes' open='(' separator=',' close=')'>" +
+            "    #{type}" +
+            "  </foreach>" +
+            "  THEN 0 ELSE 1 END, " +
+            "  n.created_at DESC" +
+            "</script>")
+    List<Notification> findAllUnreadWithPreference(
+            @Param("userId") Integer userId,
+            @Param("enabledTypes") List<String> enabledTypes,
+            @Param("highPriorityTypes") List<String> highPriorityTypes);
+
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM notifications n " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            "AND (n.invalidated IS NULL OR n.invalidated = FALSE) " +
+            "<if test='enabledTypes != null and enabledTypes.size() > 0'>" +
+            "  AND n.notification_type IN " +
+            "  <foreach item='type' collection='enabledTypes' open='(' separator=',' close=')'>" +
+            "    #{type}" +
+            "  </foreach>" +
+            "</if>" +
+            "</script>")
+    long countAllUnreadWithPreference(
+            @Param("userId") Integer userId,
+            @Param("enabledTypes") List<String> enabledTypes);
+
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM notifications n " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            "AND (n.invalidated IS NULL OR n.invalidated = FALSE) " +
+            "AND n.notification_type IN " +
+            "<foreach item='type' collection='highPriorityTypes' open='(' separator=',' close=')'>" +
+            "  #{type}" +
+            "</foreach>" +
+            "<if test='enabledTypes != null and enabledTypes.size() > 0'>" +
+            "  AND n.notification_type IN " +
+            "  <foreach item='type' collection='enabledTypes' open='(' separator=',' close=')'>" +
+            "    #{type}" +
+            "  </foreach>" +
+            "</if>" +
+            "</script>")
+    long countHighPriorityUnreadWithPreference(
+            @Param("userId") Integer userId,
+            @Param("enabledTypes") List<String> enabledTypes,
+            @Param("highPriorityTypes") List<String> highPriorityTypes);
 }

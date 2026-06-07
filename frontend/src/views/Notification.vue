@@ -6,19 +6,33 @@
           <div class="header-left">
             <span>通知消息</span>
             <el-tag
-              :type="subscriptionEnabled ? 'success' : 'info'"
+              v-if="inDoNotDisturb"
+              type="warning"
               size="small"
-              class="subscription-tag"
-              @click="goToSubscription"
+              class="status-tag"
+            >
+              <el-icon><Moon /></el-icon>
+              免打扰中
+            </el-tag>
+            <el-tag
+              :type="preferenceEnabled ? 'success' : 'info'"
+              size="small"
+              class="status-tag"
+              @click="goToPreference"
               style="cursor: pointer;"
             >
-              {{ subscriptionEnabled ? '订阅规则已生效' : '订阅规则未启用' }}
+              {{ preferenceEnabled ? '偏好已生效' : '偏好未配置' }}
             </el-tag>
           </div>
           <div class="header-actions">
-            <el-badge :value="unreadCount" class="item" style="margin-right: 15px;">
-              <span>未读消息</span>
-            </el-badge>
+            <div class="unread-summary" v-if="unreadCount > 0">
+              <el-badge :value="highPriorityUnread" :hidden="highPriorityUnread === 0" type="danger" class="badge-item">
+                <span class="summary-text">高优未读</span>
+              </el-badge>
+              <el-badge :value="normalUnread" :hidden="normalUnread === 0" type="primary" class="badge-item">
+                <span class="summary-text">普通未读</span>
+              </el-badge>
+            </div>
             <el-button v-if="unreadCount > 0" type="primary" size="small" @click="handleMarkAllRead">
               全部已读
             </el-button>
@@ -30,16 +44,16 @@
         </div>
       </template>
 
-      <div class="subscription-info" v-if="subscriptionEnabled">
+      <div class="preference-info" v-if="preferenceEnabled">
         <el-alert
-          :title="subscriptionInfoText"
+          :title="preferenceInfoText"
           type="success"
           :closable="false"
           show-icon
           style="margin-bottom: 15px;"
         >
           <template #default>
-            <span>订阅规则已生效，点击 <el-link type="primary" @click="goToSubscription">这里</el-link> 可修改配置</span>
+            <span>消息偏好已生效，点击 <el-link type="primary" @click="goToPreference">这里</el-link> 可修改配置</span>
           </template>
         </el-alert>
       </div>
@@ -49,7 +63,10 @@
           v-for="item in notificationList"
           :key="item.id"
           class="notification-item"
-          :class="{ 'unread': item.status === 'UNREAD' }"
+          :class="{ 
+            'unread': item.status === 'UNREAD',
+            'high-priority': item.highPriority 
+          }"
           @click="handleRead(item)"
         >
           <div class="notification-icon">
@@ -59,13 +76,14 @@
           <div class="notification-content">
             <div class="notification-title">
               <span>{{ item.title }}</span>
+              <el-tag v-if="item.highPriority" type="danger" size="small" effect="dark">高优先级</el-tag>
               <el-tag v-if="item.elderlyName" size="small" type="info">{{ item.elderlyName }}</el-tag>
             </div>
             <div class="notification-desc">{{ item.content }}</div>
             <div class="notification-time">{{ item.createdAt }}</div>
           </div>
           <div class="notification-status">
-            <el-dot v-if="item.status === 'UNREAD'" class="unread-dot" />
+            <el-dot v-if="item.status === 'UNREAD'" class="unread-dot" :class="{ 'high-priority-dot': item.highPriority }" />
           </div>
         </div>
 
@@ -84,34 +102,40 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const notificationList = ref([])
 const unreadCount = ref(0)
-const subscriptionEnabled = ref(false)
-const subscription = ref(null)
+const highPriorityUnread = ref(0)
+const normalUnread = ref(0)
+const preferenceEnabled = ref(false)
+const inDoNotDisturb = ref(false)
+const preference = ref(null)
 
-const subscriptionInfoText = computed(() => {
-  if (!subscription.value) return '订阅规则已启用'
+const preferenceInfoText = computed(() => {
+  if (!preference.value) return '消息偏好已启用'
   const parts = []
-  if (subscription.value.notificationTypes) {
-    parts.push('已选择消息类型')
+  if (preference.value.enabledTypes) {
+    parts.push('已选择显示类型')
   }
-  if (subscription.value.onlyAbnormal) {
-    parts.push('仅异常类消息')
+  if (preference.value.highPriorityTypes) {
+    parts.push('已设置高优先级')
   }
-  if (subscription.value.onlyFollowedElderly) {
-    parts.push('仅关注老人')
+  if (preference.value.doNotDisturbEnabled) {
+    parts.push('已开启免打扰')
   }
-  return parts.length > 0 ? `当前过滤条件：${parts.join('、')}` : '订阅规则已启用'
+  return parts.length > 0 ? `当前配置：${parts.join('、')}` : '消息偏好已启用'
 })
 
 const loadNotifications = async () => {
-  const res = await request.get('/notification/list/with-subscription')
+  const res = await request.get('/notification/list/with-preference')
   notificationList.value = res.data || []
 }
 
 const loadUnreadCount = async () => {
-  const res = await request.get('/notification/count/with-subscription')
-  unreadCount.value = res.data?.unreadCount || 0
-  subscriptionEnabled.value = res.data?.subscriptionEnabled || false
-  subscription.value = res.data?.subscription || null
+  const res = await request.get('/notification/count/with-preference')
+  unreadCount.value = res.data?.totalUnread || 0
+  highPriorityUnread.value = res.data?.highPriorityUnread || 0
+  normalUnread.value = res.data?.normalUnread || 0
+  inDoNotDisturb.value = res.data?.inDoNotDisturb || false
+  preferenceEnabled.value = !!res.data?.preference
+  preference.value = res.data?.preference || null
 }
 
 const reloadPageState = async () => {
@@ -126,13 +150,13 @@ const handleRead = async (item) => {
 }
 
 const handleMarkAllRead = async () => {
-  await request.put('/notification/read-all')
+  await request.put('/notification/read-all/with-preference')
   ElMessage.success('已全部标记为已读')
   await reloadPageState()
 }
 
-const goToSubscription = () => {
-  router.push('/notification-subscription')
+const goToPreference = () => {
+  router.push('/notification-preference')
 }
 
 onMounted(() => {
@@ -158,13 +182,31 @@ onMounted(() => {
   gap: 10px;
 }
 
-.subscription-tag {
-  margin-left: 10px;
+.status-tag {
+  margin-left: 5px;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
+}
+
+.unread-summary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-right: 15px;
+}
+
+.badge-item {
+  display: flex;
+  align-items: center;
+}
+
+.summary-text {
+  font-size: 13px;
+  color: #606266;
+  font-weight: normal;
 }
 
 .notification-list {
@@ -193,6 +235,15 @@ onMounted(() => {
   background-color: #D9ECFF;
 }
 
+.notification-item.high-priority.unread {
+  background-color: #FEF0F0;
+  border-left: 3px solid #F56C6C;
+}
+
+.notification-item.high-priority.unread:hover {
+  background-color: #FDE2E2;
+}
+
 .notification-icon {
   margin-right: 15px;
   padding-top: 3px;
@@ -217,12 +268,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   margin-bottom: 5px;
+  gap: 8px;
 }
 
 .notification-title span {
   font-weight: bold;
   color: #303133;
-  margin-right: 10px;
 }
 
 .notification-desc {
@@ -246,5 +297,24 @@ onMounted(() => {
 
 .unread-dot {
   background-color: #F56C6C;
+}
+
+.high-priority-dot {
+  width: 12px;
+  height: 12px;
+  background-color: #F56C6C;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 108, 108, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(245, 108, 108, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 108, 108, 0);
+  }
 }
 </style>

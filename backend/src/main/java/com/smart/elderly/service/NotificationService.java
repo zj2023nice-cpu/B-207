@@ -24,6 +24,9 @@ public class NotificationService extends ServiceImpl<NotificationMapper, Notific
     private NotificationSubscriptionService subscriptionService;
 
     @Autowired
+    private NotificationPreferenceService preferenceService;
+
+    @Autowired
     private NotificationReadRecordService notificationReadRecordService;
 
     @Autowired
@@ -186,5 +189,52 @@ public class NotificationService extends ServiceImpl<NotificationMapper, Notific
         private Boolean onlyAbnormal;
         private Boolean onlyFollowedElderly;
         private List<Integer> followedElderlyIds;
+    }
+
+    public List<Notification> getAllWithPreference(Integer userId) {
+        com.smart.elderly.entity.NotificationPreference preference = preferenceService.getByUserId(userId);
+        List<String> enabledTypes = preferenceService.getEnabledTypesList(preference);
+        List<String> highPriorityTypes = preferenceService.getHighPriorityTypesList(preference);
+        return baseMapper.findAllWithPreference(userId, enabledTypes, highPriorityTypes);
+    }
+
+    public List<Notification> getAllUnreadWithPreference(Integer userId) {
+        com.smart.elderly.entity.NotificationPreference preference = preferenceService.getByUserId(userId);
+        List<String> enabledTypes = preferenceService.getEnabledTypesList(preference);
+        List<String> highPriorityTypes = preferenceService.getHighPriorityTypesList(preference);
+        return baseMapper.findAllUnreadWithPreference(userId, enabledTypes, highPriorityTypes);
+    }
+
+    public Map<String, Object> countUnreadWithPreference(Integer userId) {
+        Map<String, Object> result = new HashMap<String, Object>();
+        com.smart.elderly.entity.NotificationPreference preference = preferenceService.getByUserId(userId);
+        List<String> enabledTypes = preferenceService.getEnabledTypesList(preference);
+        List<String> highPriorityTypes = preferenceService.getHighPriorityTypesList(preference);
+
+        long totalUnread = baseMapper.countAllUnreadWithPreference(userId, enabledTypes);
+        long highPriorityUnread = baseMapper.countHighPriorityUnreadWithPreference(userId, enabledTypes, highPriorityTypes);
+        boolean inDoNotDisturb = preferenceService.isInDoNotDisturbPeriod(preference);
+        boolean shouldShowBadge = preferenceService.shouldShowBadge(preference);
+        boolean shouldPlaySound = preferenceService.shouldPlaySound(preference);
+
+        result.put("totalUnread", totalUnread);
+        result.put("highPriorityUnread", highPriorityUnread);
+        result.put("normalUnread", totalUnread - highPriorityUnread);
+        result.put("displayUnread", shouldShowBadge ? totalUnread : 0);
+        result.put("inDoNotDisturb", inDoNotDisturb);
+        result.put("shouldShowBadge", shouldShowBadge);
+        result.put("shouldPlaySound", shouldPlaySound);
+        result.put("preference", preference);
+        result.put("highPriorityTypes", highPriorityTypes);
+        result.put("enabledTypes", enabledTypes);
+        return result;
+    }
+
+    @Transactional
+    public void markAllAsReadWithPreference(Integer userId) {
+        List<Notification> unreadNotifications = getAllUnreadWithPreference(userId);
+        for (Notification notification : unreadNotifications) {
+            notificationReadRecordService.markAsRead(notification.getId(), userId);
+        }
     }
 }

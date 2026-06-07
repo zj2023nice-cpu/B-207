@@ -38,4 +38,7 @@ public class Notification {
 
     @TableField(exist = false)
     private String elderlyName;
+    
+    @TableField(exist = false)
+    private Boolean highPriority;
 }

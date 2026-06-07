@@ -105,4 +105,41 @@ public class NotificationController {
         notificationService.markAllAsRead(userId);
         return Result.success("已全部标记为已读");
     }
+
+    @GetMapping("/list/with-preference")
+    public Result<List<Notification>> listWithPreference() {
+        Integer userId = UserContextHolder.getUserId();
+        if (userId == null) {
+            return Result.error("用户未登录");
+        }
+        return Result.success(notificationService.getAllWithPreference(userId));
+    }
+
+    @GetMapping("/unread/with-preference")
+    public Result<List<Notification>> getUnreadWithPreference() {
+        Integer userId = UserContextHolder.getUserId();
+        if (userId == null) {
+            return Result.error("用户未登录");
+        }
+        return Result.success(notificationService.getAllUnreadWithPreference(userId));
+    }
+
+    @GetMapping("/count/with-preference")
+    public Result<Map<String, Object>> countUnreadWithPreference() {
+        Integer userId = UserContextHolder.getUserId();
+        if (userId == null) {
+            return Result.error("用户未登录");
+        }
+        return Result.success(notificationService.countUnreadWithPreference(userId));
+    }
+
+    @PutMapping("/read-all/with-preference")
+    public Result<String> markAllAsReadWithPreference() {
+        Integer userId = UserContextHolder.getUserId();
+        if (userId == null) {
+            return Result.error("用户未登录");
+        }
+        notificationService.markAllAsReadWithPreference(userId);
+        return Result.success("已全部标记为已读");
+    }
 }

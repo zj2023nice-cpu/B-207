@@ -61,6 +61,12 @@ const routes = [
                 meta: { title: '订阅规则' }
             },
             {
+                path: 'notification-preference',
+                name: 'NotificationPreference',
+                component: () => import('../views/NotificationPreference.vue'),
+                meta: { title: '消息偏好' }
+            },
+            {
                 path: 'elderly-tag',
                 name: 'ElderlyTag',
                 component: () => import('../views/ElderlyTag.vue'),
