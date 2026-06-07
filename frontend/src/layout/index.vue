@@ -37,6 +37,16 @@
               <span>通知消息</span>
             </el-badge>
           </el-menu-item>
+          <el-menu-item index="/system-announcement">
+            <el-badge :value="announcementUnreadCount" :hidden="announcementUnreadCount === 0" class="notification-badge">
+              <el-icon><Promotion /></el-icon>
+              <span>系统公告</span>
+            </el-badge>
+          </el-menu-item>
+          <el-menu-item index="/system-announcement-admin">
+            <el-icon><EditPen /></el-icon>
+            <span>公告管理</span>
+          </el-menu-item>
           <el-menu-item index="/operation-log">
             <el-icon><Document /></el-icon>
             <span>操作日志</span>
@@ -92,6 +102,7 @@ import request from '../utils/request'
 const router = useRouter()
 const username = ref('管理员')
 const unreadCount = ref(0)
+const announcementUnreadCount = ref(0)
 let timer = null
 
 const loadUnreadCount = async () => {
@@ -100,6 +111,15 @@ const loadUnreadCount = async () => {
     unreadCount.value = res.data?.unreadCount || 0
   } catch {
     unreadCount.value = 0
+  }
+}
+
+const loadAnnouncementUnreadCount = async () => {
+  try {
+    const res = await request.get('/system-announcement/unread-count')
+    announcementUnreadCount.value = res.data?.unreadCount || 0
+  } catch {
+    announcementUnreadCount.value = 0
   }
 }
 
@@ -115,7 +135,11 @@ onMounted(() => {
   }
   
   loadUnreadCount()
-  timer = setInterval(loadUnreadCount, 30000)
+  loadAnnouncementUnreadCount()
+  timer = setInterval(() => {
+    loadUnreadCount()
+    loadAnnouncementUnreadCount()
+  }, 30000)
 })
 
 onUnmounted(() => {

@@ -71,6 +71,18 @@ const routes = [
                 name: 'ShiftHandover',
                 component: () => import('../views/ShiftHandover.vue'),
                 meta: { title: '交接班记录' }
+            },
+            {
+                path: 'system-announcement',
+                name: 'SystemAnnouncement',
+                component: () => import('../views/SystemAnnouncement.vue'),
+                meta: { title: '系统公告' }
+            },
+            {
+                path: 'system-announcement-admin',
+                name: 'SystemAnnouncementAdmin',
+                component: () => import('../views/SystemAnnouncementAdmin.vue'),
+                meta: { title: '公告管理' }
             }
         ]
     }
