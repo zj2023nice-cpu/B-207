@@ -5,30 +5,30 @@ import lombok.Data;
 
 @Data
 public class ElderlyImportVO {
-    @ExcelProperty("姓名")
+    @ExcelProperty(index = 0)
     private String name;
 
-    @ExcelProperty("年龄")
-    private String ageStr;
+    @ExcelProperty(index = 1)
+    private Object ageStr;
 
-    @ExcelProperty("性别")
+    @ExcelProperty(index = 2)
     private String gender;
 
-    @ExcelProperty("联系电话")
+    @ExcelProperty(index = 3)
     private String phone;
 
-    @ExcelProperty("居住地址")
+    @ExcelProperty(index = 4)
     private String address;
 
-    @ExcelProperty("紧急联系人")
+    @ExcelProperty(index = 5)
     private String emergencyContactName;
 
-    @ExcelProperty("紧急联系人电话")
+    @ExcelProperty(index = 6)
     private String emergencyContactPhone;
 
-    @ExcelProperty("紧急联系人关系")
+    @ExcelProperty(index = 7)
     private String emergencyContactRelation;
 
-    @ExcelProperty("状态")
+    @ExcelProperty(index = 8)
     private String status;
 }

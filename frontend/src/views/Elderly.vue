@@ -710,9 +710,6 @@ const handleImportSubmit = async () => {
     formData.append('file', selectedFile.value)
 
     const res = await request.post('/elderly/import', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
       timeout: 120000
     })
 

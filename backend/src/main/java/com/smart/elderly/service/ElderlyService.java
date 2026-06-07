@@ -37,10 +37,10 @@ public class ElderlyService extends ServiceImpl<ElderlyMapper, Elderly> {
         response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
 
         List<List<String>> headers = new ArrayList<>();
-        headers.add(Arrays.asList("姓名*"));
-        headers.add(Arrays.asList("年龄*"));
-        headers.add(Arrays.asList("性别*"));
-        headers.add(Arrays.asList("联系电话*"));
+        headers.add(Arrays.asList("姓名（必填）"));
+        headers.add(Arrays.asList("年龄（必填）"));
+        headers.add(Arrays.asList("性别（必填）"));
+        headers.add(Arrays.asList("联系电话（必填）"));
         headers.add(Arrays.asList("居住地址"));
         headers.add(Arrays.asList("紧急联系人"));
         headers.add(Arrays.asList("紧急联系人电话"));
@@ -50,7 +50,7 @@ public class ElderlyService extends ServiceImpl<ElderlyMapper, Elderly> {
         List<List<Object>> data = new ArrayList<>();
         List<Object> sampleRow = new ArrayList<>();
         sampleRow.add("张三");
-        sampleRow.add("75");
+        sampleRow.add(75);
         sampleRow.add("男");
         sampleRow.add("13800138000");
         sampleRow.add("北京市朝阳区XX街道XX小区");
@@ -71,98 +71,113 @@ public class ElderlyService extends ServiceImpl<ElderlyMapper, Elderly> {
         List<Elderly> validList = new ArrayList<>();
 
         EasyExcel.read(file.getInputStream(), ElderlyImportVO.class, new AnalysisEventListener<ElderlyImportVO>() {
-            private int rowIndex = 1;
+            private int rowIndex = 0;
 
             @Override
             public void invoke(ElderlyImportVO vo, AnalysisContext context) {
                 rowIndex++;
-                result.incrementTotal();
 
+                if (isRowEmpty(vo)) {
+                    return;
+                }
+
+                result.incrementTotal();
+                int currentRowNum = rowIndex + 1;
                 boolean rowValid = true;
 
-                if (vo.getName() == null || vo.getName().trim().isEmpty()) {
-                    result.addError(rowIndex, "姓名", "姓名不能为空");
+                String name = trimStr(vo.getName());
+                String ageStr = objectToString(vo.getAgeStr());
+                String gender = trimStr(vo.getGender());
+                String phone = trimStr(vo.getPhone());
+                String address = trimStr(vo.getAddress());
+                String emergencyContactName = trimStr(vo.getEmergencyContactName());
+                String emergencyContactPhone = trimStr(vo.getEmergencyContactPhone());
+                String emergencyContactRelation = trimStr(vo.getEmergencyContactRelation());
+                String status = trimStr(vo.getStatus());
+
+                if (name == null) {
+                    result.addError(currentRowNum, "姓名", "姓名不能为空");
                     rowValid = false;
-                } else if (vo.getName().length() > 50) {
-                    result.addError(rowIndex, "姓名", "姓名长度不能超过50个字符");
+                } else if (name.length() > 50) {
+                    result.addError(currentRowNum, "姓名", "姓名长度不能超过50个字符");
                     rowValid = false;
                 }
 
                 Integer age = null;
-                if (vo.getAgeStr() == null || vo.getAgeStr().trim().isEmpty()) {
-                    result.addError(rowIndex, "年龄", "年龄不能为空");
+                if (ageStr == null) {
+                    result.addError(currentRowNum, "年龄", "年龄不能为空");
                     rowValid = false;
                 } else {
                     try {
-                        age = Integer.parseInt(vo.getAgeStr().trim());
+                        age = parseAge(ageStr);
                         if (age < 0 || age > 120) {
-                            result.addError(rowIndex, "年龄", "年龄必须在0-120之间");
+                            result.addError(currentRowNum, "年龄", "年龄必须在0-120之间");
                             rowValid = false;
                         }
                     } catch (NumberFormatException e) {
-                        result.addError(rowIndex, "年龄", "年龄必须是有效数字");
+                        result.addError(currentRowNum, "年龄", "年龄必须是有效数字");
                         rowValid = false;
                     }
                 }
 
-                if (vo.getGender() == null || vo.getGender().trim().isEmpty()) {
-                    result.addError(rowIndex, "性别", "性别不能为空");
+                if (gender == null) {
+                    result.addError(currentRowNum, "性别", "性别不能为空");
                     rowValid = false;
-                } else if (!VALID_GENDERS.contains(vo.getGender().trim())) {
-                    result.addError(rowIndex, "性别", "性别必须是'男'或'女'");
-                    rowValid = false;
-                }
-
-                if (vo.getPhone() == null || vo.getPhone().trim().isEmpty()) {
-                    result.addError(rowIndex, "联系电话", "联系电话不能为空");
-                    rowValid = false;
-                } else if (!PHONE_PATTERN.matcher(vo.getPhone().trim()).matches()) {
-                    result.addError(rowIndex, "联系电话", "联系电话格式不正确，请输入11位有效手机号");
+                } else if (!VALID_GENDERS.contains(gender)) {
+                    result.addError(currentRowNum, "性别", "性别必须是'男'或'女'");
                     rowValid = false;
                 }
 
-                if (vo.getAddress() != null && vo.getAddress().length() > 200) {
-                    result.addError(rowIndex, "居住地址", "居住地址长度不能超过200个字符");
+                if (phone == null) {
+                    result.addError(currentRowNum, "联系电话", "联系电话不能为空");
+                    rowValid = false;
+                } else if (!PHONE_PATTERN.matcher(phone).matches()) {
+                    result.addError(currentRowNum, "联系电话", "联系电话格式不正确，请输入11位有效手机号");
                     rowValid = false;
                 }
 
-                if (vo.getEmergencyContactName() != null && vo.getEmergencyContactName().length() > 50) {
-                    result.addError(rowIndex, "紧急联系人", "紧急联系人姓名长度不能超过50个字符");
+                if (address != null && address.length() > 200) {
+                    result.addError(currentRowNum, "居住地址", "居住地址长度不能超过200个字符");
                     rowValid = false;
                 }
 
-                if (vo.getEmergencyContactPhone() != null && !vo.getEmergencyContactPhone().trim().isEmpty()) {
-                    if (!PHONE_PATTERN.matcher(vo.getEmergencyContactPhone().trim()).matches()) {
-                        result.addError(rowIndex, "紧急联系人电话", "紧急联系人电话格式不正确");
+                if (emergencyContactName != null && emergencyContactName.length() > 50) {
+                    result.addError(currentRowNum, "紧急联系人", "紧急联系人姓名长度不能超过50个字符");
+                    rowValid = false;
+                }
+
+                if (emergencyContactPhone != null) {
+                    if (!PHONE_PATTERN.matcher(emergencyContactPhone).matches()) {
+                        result.addError(currentRowNum, "紧急联系人电话", "紧急联系人电话格式不正确");
                         rowValid = false;
                     }
                 }
 
-                if (vo.getEmergencyContactRelation() != null && !vo.getEmergencyContactRelation().trim().isEmpty()) {
-                    if (!VALID_RELATIONS.contains(vo.getEmergencyContactRelation().trim())) {
-                        result.addError(rowIndex, "紧急联系人关系", "关系必须是：配偶、儿子、女儿、孙子、孙女、侄子、侄女、其他亲属、朋友");
+                if (emergencyContactRelation != null) {
+                    if (!VALID_RELATIONS.contains(emergencyContactRelation)) {
+                        result.addError(currentRowNum, "紧急联系人关系", "关系必须是：配偶、儿子、女儿、孙子、孙女、侄子、侄女、其他亲属、朋友");
                         rowValid = false;
                     }
                 }
 
-                if (vo.getStatus() != null && !vo.getStatus().trim().isEmpty()) {
-                    if (!VALID_STATUSES.contains(vo.getStatus().trim())) {
-                        result.addError(rowIndex, "状态", "状态必须是：正常、住院、外出、失联");
+                if (status != null) {
+                    if (!VALID_STATUSES.contains(status)) {
+                        result.addError(currentRowNum, "状态", "状态必须是：正常、住院、外出、失联");
                         rowValid = false;
                     }
                 }
 
                 if (rowValid) {
                     Elderly elderly = new Elderly();
-                    elderly.setName(vo.getName().trim());
+                    elderly.setName(name);
                     elderly.setAge(age);
-                    elderly.setGender(vo.getGender().trim());
-                    elderly.setPhone(vo.getPhone().trim());
-                    elderly.setAddress(vo.getAddress() != null ? vo.getAddress().trim() : null);
-                    elderly.setEmergencyContactName(vo.getEmergencyContactName() != null ? vo.getEmergencyContactName().trim() : null);
-                    elderly.setEmergencyContactPhone(vo.getEmergencyContactPhone() != null ? vo.getEmergencyContactPhone().trim() : null);
-                    elderly.setEmergencyContactRelation(vo.getEmergencyContactRelation() != null ? vo.getEmergencyContactRelation().trim() : null);
-                    elderly.setStatus(vo.getStatus() != null ? vo.getStatus().trim() : "正常");
+                    elderly.setGender(gender);
+                    elderly.setPhone(phone);
+                    elderly.setAddress(address);
+                    elderly.setEmergencyContactName(emergencyContactName);
+                    elderly.setEmergencyContactPhone(emergencyContactPhone);
+                    elderly.setEmergencyContactRelation(emergencyContactRelation);
+                    elderly.setStatus(status != null ? status : "正常");
                     elderly.setCreatedAt(LocalDateTime.now());
                     elderly.setUpdatedAt(LocalDateTime.now());
                     validList.add(elderly);
@@ -172,7 +187,7 @@ public class ElderlyService extends ServiceImpl<ElderlyMapper, Elderly> {
             @Override
             public void doAfterAllAnalysed(AnalysisContext context) {
             }
-        }).sheet().doRead();
+        }).sheet().headRowNumber(1).doRead();
 
         if (!result.getHasError() && !validList.isEmpty()) {
             batchSave(validList);
@@ -180,6 +195,46 @@ public class ElderlyService extends ServiceImpl<ElderlyMapper, Elderly> {
         }
 
         return result;
+    }
+
+    private String trimStr(String str) {
+        if (str == null) {
+            return null;
+        }
+        String trimmed = str.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Integer parseAge(String ageStr) {
+        if (ageStr == null) {
+            throw new NumberFormatException();
+        }
+        ageStr = ageStr.trim();
+        if (ageStr.contains(".")) {
+            double d = Double.parseDouble(ageStr);
+            return (int) Math.round(d);
+        }
+        return Integer.parseInt(ageStr);
+    }
+
+    private boolean isRowEmpty(ElderlyImportVO vo) {
+        return trimStr(vo.getName()) == null
+                && objectToString(vo.getAgeStr()) == null
+                && trimStr(vo.getGender()) == null
+                && trimStr(vo.getPhone()) == null
+                && trimStr(vo.getAddress()) == null
+                && trimStr(vo.getEmergencyContactName()) == null
+                && trimStr(vo.getEmergencyContactPhone()) == null
+                && trimStr(vo.getEmergencyContactRelation()) == null
+                && trimStr(vo.getStatus()) == null;
+    }
+
+    private String objectToString(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        String str = String.valueOf(obj).trim();
+        return str.isEmpty() ? null : str;
     }
 
     @Transactional(rollbackFor = Exception.class)
