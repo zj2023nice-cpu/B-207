@@ -119,6 +119,12 @@ const routes = [
                 name: 'ExportTask',
                 component: () => import('../views/ExportTask.vue'),
                 meta: { title: '数据导出任务中心' }
+            },
+            {
+                path: 'search',
+                name: 'Search',
+                component: () => import('../views/Search.vue'),
+                meta: { title: '全局搜索' }
             }
         ]
     }

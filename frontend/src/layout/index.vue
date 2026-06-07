@@ -93,6 +93,7 @@
           <div class="header-left">
             <span>{{ $route.meta.title }}</span>
           </div>
+          <GlobalSearch />
           <div class="header-right">
             <el-badge :value="displayUnreadCount" :hidden="displayUnreadCount === 0" class="header-notification" @click="goToNotification">
               <el-icon class="notification-icon"><Bell /></el-icon>
@@ -125,6 +126,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
+import GlobalSearch from '../components/GlobalSearch.vue'
 
 const router = useRouter()
 const username = ref('管理员')
@@ -230,6 +232,7 @@ const handleCommand = async (command) => {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #e6e6e6;
+  gap: 20px;
 }
 .el-dropdown-link {
   cursor: pointer;
