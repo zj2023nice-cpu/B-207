@@ -15,6 +15,10 @@
             <el-icon><DataAnalysis /></el-icon>
             <span>总览</span>
           </el-menu-item>
+          <el-menu-item index="/workbench">
+            <el-icon><Tickets /></el-icon>
+            <span>待办工作台</span>
+          </el-menu-item>
           <el-menu-item index="/elderly">
             <el-icon><User /></el-icon>
             <span>老人管理</span>

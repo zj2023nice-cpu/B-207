@@ -19,6 +19,12 @@ const routes = [
                 meta: { title: '总览' }
             },
             {
+                path: 'workbench',
+                name: 'Workbench',
+                component: () => import('../views/Workbench.vue'),
+                meta: { title: '待办工作台' }
+            },
+            {
                 path: 'elderly',
                 name: 'Elderly',
                 component: () => import('../views/Elderly.vue'),

@@ -7,7 +7,12 @@ import com.smart.elderly.service.WorkbenchService;
 import com.smart.elderly.vo.WorkbenchItemVO;
 import com.smart.elderly.vo.WorkbenchStatsVO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,17 +26,19 @@ public class WorkbenchController {
     private WorkbenchService workbenchService;
 
     @GetMapping("/stats")
-    public Result<WorkbenchStatsVO> getStats(@RequestParam(required = false) Integer userId) {
+    public Result<WorkbenchStatsVO> getStats() {
+        Integer userId = UserContextHolder.getUserId();
         if (userId == null) {
-            userId = UserContextHolder.getUserId();
+            return Result.error("用户未登录");
         }
         return Result.success(workbenchService.getStats(userId));
     }
 
     @PostMapping("/items")
     public Result<List<WorkbenchItemVO>> getItems(@RequestBody WorkbenchQueryDTO queryDTO) {
-        if (queryDTO.getUserId() == null) {
-            queryDTO.setUserId(UserContextHolder.getUserId());
+        Integer userId = UserContextHolder.getUserId();
+        if (userId == null) {
+            return Result.error("用户未登录");
         }
         if (queryDTO.getPageNum() == null) {
             queryDTO.setPageNum(1);
@@ -39,12 +46,11 @@ public class WorkbenchController {
         if (queryDTO.getPageSize() == null) {
             queryDTO.setPageSize(20);
         }
-        return Result.success(workbenchService.getWorkbenchItems(queryDTO));
+        return Result.success(workbenchService.getWorkbenchItems(userId, queryDTO));
     }
 
     @GetMapping("/items")
     public Result<List<WorkbenchItemVO>> getItemsGet(
-            @RequestParam(required = false) Integer userId,
             @RequestParam(required = false) List<Integer> elderlyIds,
             @RequestParam(required = false) List<String> priorities,
             @RequestParam(required = false) List<String> itemTypes,
@@ -52,9 +58,12 @@ public class WorkbenchController {
             @RequestParam(required = false) LocalDateTime endTime,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize) {
+        Integer userId = UserContextHolder.getUserId();
+        if (userId == null) {
+            return Result.error("用户未登录");
+        }
 
         WorkbenchQueryDTO queryDTO = new WorkbenchQueryDTO();
-        queryDTO.setUserId(userId != null ? userId : UserContextHolder.getUserId());
         queryDTO.setElderlyIds(elderlyIds);
         queryDTO.setPriorities(priorities);
         queryDTO.setItemTypes(itemTypes);
@@ -63,12 +72,12 @@ public class WorkbenchController {
         queryDTO.setPageNum(pageNum);
         queryDTO.setPageSize(pageSize);
 
-        return Result.success(workbenchService.getWorkbenchItems(queryDTO));
+        return Result.success(workbenchService.getWorkbenchItems(userId, queryDTO));
     }
 
     @GetMapping("/filter-options")
     public Result<Map<String, List<Map<String, String>>>> getFilterOptions() {
-        Map<String, List<Map<String, String>>> options = new java.util.HashMap<>();
+        Map<String, List<Map<String, String>>> options = new java.util.HashMap<String, List<Map<String, String>>>();
         options.put("itemTypes", workbenchService.getFilterOptions());
         options.put("priorities", workbenchService.getPriorityOptions());
         return Result.success(options);

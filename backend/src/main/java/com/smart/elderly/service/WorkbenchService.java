@@ -1,13 +1,16 @@
 package com.smart.elderly.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.smart.elderly.context.UserContextHolder;
 import com.smart.elderly.dto.WorkbenchQueryDTO;
-import com.smart.elderly.entity.*;
+import com.smart.elderly.entity.Elderly;
+import com.smart.elderly.entity.HealthRecord;
+import com.smart.elderly.entity.HealthWarningRecord;
+import com.smart.elderly.entity.Notification;
 import com.smart.elderly.enums.HealthWarningStatus;
 import com.smart.elderly.mapper.ElderlyMapper;
 import com.smart.elderly.mapper.HealthRecordMapper;
 import com.smart.elderly.mapper.HealthWarningRecordMapper;
-import com.smart.elderly.mapper.NotificationMapper;
 import com.smart.elderly.vo.WorkbenchItemVO;
 import com.smart.elderly.vo.WorkbenchStatsVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +18,15 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,16 +52,16 @@ public class WorkbenchService {
     private HealthWarningRecordMapper warningRecordMapper;
 
     @Autowired
-    private NotificationMapper notificationMapper;
-
-    @Autowired
     private HealthRecordMapper healthRecordMapper;
 
     @Autowired
     private ElderlyMapper elderlyMapper;
 
     @Autowired
-    private NotificationPreferenceService preferenceService;
+    private NotificationService notificationService;
+
+    @Autowired
+    private ElderlyFollowService elderlyFollowService;
 
     public WorkbenchStatsVO getStats(Integer userId) {
         WorkbenchStatsVO stats = new WorkbenchStatsVO();
@@ -68,9 +79,9 @@ public class WorkbenchService {
                 .filter(i -> i.getElderlyId() != null)
                 .collect(Collectors.groupingBy(WorkbenchItemVO::getElderlyId));
 
-        List<Map<String, Object>> elderlyStats = new ArrayList<>();
+        List<Map<String, Object>> elderlyStats = new ArrayList<Map<String, Object>>();
         for (Map.Entry<Integer, List<WorkbenchItemVO>> entry : itemsByElderly.entrySet()) {
-            Map<String, Object> stat = new HashMap<>();
+            Map<String, Object> stat = new HashMap<String, Object>();
             Elderly elderly = elderlyMapper.selectById(entry.getKey());
             stat.put("elderlyId", entry.getKey());
             stat.put("elderlyName", elderly != null ? elderly.getName() : "未知");
@@ -90,8 +101,8 @@ public class WorkbenchService {
         return stats;
     }
 
-    public List<WorkbenchItemVO> getWorkbenchItems(WorkbenchQueryDTO queryDTO) {
-        List<WorkbenchItemVO> allItems = getAllWorkbenchItems(queryDTO.getUserId());
+    public List<WorkbenchItemVO> getWorkbenchItems(Integer userId, WorkbenchQueryDTO queryDTO) {
+        List<WorkbenchItemVO> allItems = getAllWorkbenchItems(userId);
 
         return allItems.stream()
                 .filter(item -> {
@@ -130,17 +141,21 @@ public class WorkbenchService {
     }
 
     private List<WorkbenchItemVO> getAllWorkbenchItems(Integer userId) {
-        List<WorkbenchItemVO> items = new ArrayList<>();
+        List<WorkbenchItemVO> items = new ArrayList<WorkbenchItemVO>();
+        boolean isAdmin = UserContextHolder.isAdmin();
+        List<Integer> visibleElderlyIds = isAdmin ? Collections.<Integer>emptyList() : elderlyFollowService.getFollowedIds();
 
-        items.addAll(collectWarningItems());
+        items.addAll(collectWarningItems(isAdmin, visibleElderlyIds));
         items.addAll(collectNotificationItems(userId));
-        items.addAll(collectHealthRecordItems());
+        items.addAll(collectHealthRecordItems(isAdmin, visibleElderlyIds));
 
         return items;
     }
 
-    private List<WorkbenchItemVO> collectWarningItems() {
-        List<WorkbenchItemVO> items = new ArrayList<>();
+    private List<WorkbenchItemVO> collectWarningItems(boolean isAdmin, List<Integer> visibleElderlyIds) {
+        if (!isAdmin && (visibleElderlyIds == null || visibleElderlyIds.isEmpty())) {
+            return Collections.emptyList();
+        }
 
         List<String> pendingStatuses = Arrays.asList(
                 HealthWarningStatus.PENDING.getCode(),
@@ -149,8 +164,11 @@ public class WorkbenchService {
                 HealthWarningStatus.ESCALATED.getCode()
         );
 
-        LambdaQueryWrapper<HealthWarningRecord> wrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<HealthWarningRecord> wrapper = new LambdaQueryWrapper<HealthWarningRecord>();
         wrapper.in(HealthWarningRecord::getStatus, pendingStatuses);
+        if (!isAdmin) {
+            wrapper.in(HealthWarningRecord::getElderlyId, visibleElderlyIds);
+        }
         wrapper.orderByDesc(HealthWarningRecord::getCreatedAt);
 
         List<HealthWarningRecord> warnings = warningRecordMapper.selectList(wrapper);
@@ -161,6 +179,7 @@ public class WorkbenchService {
                 .collect(Collectors.toList());
         Map<Integer, String> elderlyNameMap = getElderlyNameMap(elderlyIds);
 
+        List<WorkbenchItemVO> items = new ArrayList<WorkbenchItemVO>();
         for (HealthWarningRecord warning : warnings) {
             WorkbenchItemVO item = new WorkbenchItemVO();
             item.setItemId(ITEM_TYPE_WARNING + "_" + warning.getId());
@@ -172,7 +191,7 @@ public class WorkbenchService {
             item.setTitle(warning.getWarningMessage() != null ? warning.getWarningMessage() : "健康预警提醒");
             item.setDescription(buildWarningDescription(warning));
             item.setStatus(warning.getStatus());
-            item.setStatusName(HealthWarningStatus.fromCode(warning.getStatus()).getDisplayName());
+            item.setStatusName(resolveWarningStatusName(warning.getStatus()));
             item.setCreatedAt(warning.getCreatedAt());
 
             int levelScore = calculateWarningLevelScore(warning.getWarningLevel());
@@ -182,10 +201,9 @@ public class WorkbenchService {
             item.setPriorityScore(totalScore);
             item.setPriority(determinePriority(totalScore));
             item.setPriorityName(getPriorityDisplayName(item.getPriority()));
-            item.setQuickActions(buildWarningQuickActions(warning));
-            item.setDetailUrl("/warning/record/" + warning.getId());
+            item.setDetailUrl("/warning?id=" + warning.getId());
             item.setModuleUrl("/warning");
-
+            item.setQuickActions(buildWarningQuickActions(warning));
             items.add(item);
         }
 
@@ -193,51 +211,28 @@ public class WorkbenchService {
     }
 
     private List<WorkbenchItemVO> collectNotificationItems(Integer userId) {
-        List<WorkbenchItemVO> items = new ArrayList<>();
-
         if (userId == null) {
-            return items;
+            return Collections.emptyList();
         }
 
-        NotificationPreference preference = preferenceService.getByUserId(userId);
-        List<String> highPriorityTypes = preferenceService.getHighPriorityTypesList(preference);
-        List<String> enabledTypes = preferenceService.getEnabledTypesList(preference);
-
-        LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Notification::getUserId, userId);
-        wrapper.ne(Notification::getStatus, "READ");
-        wrapper.ne(Notification::getInvalidated, true);
-        wrapper.orderByDesc(Notification::getCreatedAt);
-
-        List<Notification> notifications = notificationMapper.selectList(wrapper);
-        List<Integer> elderlyIds = notifications.stream()
-                .map(Notification::getElderlyId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-        Map<Integer, String> elderlyNameMap = getElderlyNameMap(elderlyIds);
+        List<Notification> notifications = notificationService.getAllUnreadWithPreference(userId);
+        List<WorkbenchItemVO> items = new ArrayList<WorkbenchItemVO>();
 
         for (Notification notification : notifications) {
-            boolean isHighPriority = highPriorityTypes.contains(notification.getNotificationType());
-            boolean isEnabled = enabledTypes.isEmpty() || enabledTypes.contains(notification.getNotificationType());
-
-            if (!isEnabled) {
-                continue;
-            }
-
             WorkbenchItemVO item = new WorkbenchItemVO();
             item.setItemId(ITEM_TYPE_NOTIFICATION + "_" + notification.getId());
             item.setItemType(ITEM_TYPE_NOTIFICATION);
             item.setItemTypeName("通知消息");
             item.setSourceId(notification.getId());
             item.setElderlyId(notification.getElderlyId());
-            item.setElderlyName(elderlyNameMap.get(notification.getElderlyId()));
+            item.setElderlyName(notification.getElderlyName());
             item.setTitle(notification.getTitle());
             item.setDescription(notification.getContent());
             item.setStatus(notification.getStatus());
-            item.setStatusName(notification.getStatus() != null ? notification.getStatus() : "未读");
+            item.setStatusName("UNREAD".equalsIgnoreCase(notification.getStatus()) ? "未读" : (notification.getStatus() == null ? "未读" : notification.getStatus()));
             item.setCreatedAt(notification.getCreatedAt());
 
+            boolean isHighPriority = Boolean.TRUE.equals(notification.getHighPriority());
             int typeScore = isHighPriority ? SCORE_LEVEL_HIGH : SCORE_LEVEL_LOW;
             int timeScore = calculateTimeDecayScore(notification.getCreatedAt());
             int totalScore = (SCORE_TYPE_NOTIFICATION + typeScore * 15) * timeScore / 100;
@@ -245,24 +240,27 @@ public class WorkbenchService {
             item.setPriorityScore(totalScore);
             item.setPriority(isHighPriority ? PRIORITY_HIGH : determinePriority(totalScore));
             item.setPriorityName(getPriorityDisplayName(item.getPriority()));
-            item.setQuickActions(buildNotificationQuickActions(notification));
-            item.setDetailUrl("/notification/" + notification.getId());
+            item.setDetailUrl("/notification?id=" + notification.getId());
             item.setModuleUrl("/notification");
-
+            item.setQuickActions(buildNotificationQuickActions(notification));
             items.add(item);
         }
 
         return items;
     }
 
-    private List<WorkbenchItemVO> collectHealthRecordItems() {
-        List<WorkbenchItemVO> items = new ArrayList<>();
+    private List<WorkbenchItemVO> collectHealthRecordItems(boolean isAdmin, List<Integer> visibleElderlyIds) {
+        if (!isAdmin && (visibleElderlyIds == null || visibleElderlyIds.isEmpty())) {
+            return Collections.emptyList();
+        }
 
         LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
-
-        LambdaQueryWrapper<HealthRecord> wrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<HealthRecord> wrapper = new LambdaQueryWrapper<HealthRecord>();
         wrapper.eq(HealthRecord::getIsAbnormal, true);
         wrapper.ge(HealthRecord::getCheckTime, twentyFourHoursAgo);
+        if (!isAdmin) {
+            wrapper.in(HealthRecord::getElderlyId, visibleElderlyIds);
+        }
         wrapper.orderByDesc(HealthRecord::getCheckTime);
 
         List<HealthRecord> healthRecords = healthRecordMapper.selectList(wrapper);
@@ -273,6 +271,7 @@ public class WorkbenchService {
                 .collect(Collectors.toList());
         Map<Integer, String> elderlyNameMap = getElderlyNameMap(elderlyIds);
 
+        List<WorkbenchItemVO> items = new ArrayList<WorkbenchItemVO>();
         for (HealthRecord record : healthRecords) {
             WorkbenchItemVO item = new WorkbenchItemVO();
             item.setItemId(ITEM_TYPE_HEALTH_RECORD + "_" + record.getId());
@@ -294,10 +293,9 @@ public class WorkbenchService {
             item.setPriorityScore(totalScore);
             item.setPriority(determinePriority(totalScore));
             item.setPriorityName(getPriorityDisplayName(item.getPriority()));
-            item.setQuickActions(buildHealthRecordQuickActions(record));
-            item.setDetailUrl("/health/record/" + record.getId());
+            item.setDetailUrl("/health?elderlyId=" + record.getElderlyId() + "&recordId=" + record.getId());
             item.setModuleUrl("/health");
-
+            item.setQuickActions(buildHealthRecordQuickActions(record));
             items.add(item);
         }
 
@@ -321,7 +319,7 @@ public class WorkbenchService {
 
     private String buildHealthRecordDescription(HealthRecord record) {
         StringBuilder sb = new StringBuilder();
-        List<String> abnormalIndicators = new ArrayList<>();
+        List<String> abnormalIndicators = new ArrayList<String>();
         if (record.getSystolicPressure() != null && record.getDiastolicPressure() != null) {
             abnormalIndicators.add("血压:" + record.getSystolicPressure() + "/" + record.getDiastolicPressure());
         }
@@ -369,26 +367,41 @@ public class WorkbenchService {
         int score = 0;
         if (record.getSystolicPressure() != null) {
             int sys = record.getSystolicPressure();
-            if (sys >= 180 || sys <= 90) score += 3;
-            else if (sys >= 160 || sys <= 100) score += 2;
-            else if (sys >= 140) score += 1;
+            if (sys >= 180 || sys <= 90) {
+                score += 3;
+            } else if (sys >= 160 || sys <= 100) {
+                score += 2;
+            } else if (sys >= 140) {
+                score += 1;
+            }
         }
         if (record.getTemperature() != null) {
             double temp = record.getTemperature().doubleValue();
-            if (temp >= 39 || temp <= 35) score += 3;
-            else if (temp >= 38.5 || temp <= 35.5) score += 2;
-            else if (temp >= 37.5) score += 1;
+            if (temp >= 39 || temp <= 35) {
+                score += 3;
+            } else if (temp >= 38.5 || temp <= 35.5) {
+                score += 2;
+            } else if (temp >= 37.5) {
+                score += 1;
+            }
         }
         if (record.getHeartRate() != null) {
             int hr = record.getHeartRate();
-            if (hr >= 120 || hr <= 50) score += 3;
-            else if (hr >= 100 || hr <= 60) score += 2;
+            if (hr >= 120 || hr <= 50) {
+                score += 3;
+            } else if (hr >= 100 || hr <= 60) {
+                score += 2;
+            }
         }
         if (record.getBloodOxygen() != null) {
             int spo2 = record.getBloodOxygen();
-            if (spo2 <= 90) score += 3;
-            else if (spo2 <= 93) score += 2;
-            else if (spo2 <= 95) score += 1;
+            if (spo2 <= 90) {
+                score += 3;
+            } else if (spo2 <= 93) {
+                score += 2;
+            } else if (spo2 <= 95) {
+                score += 1;
+            }
         }
         return Math.min(score, SCORE_LEVEL_HIGH);
     }
@@ -398,18 +411,34 @@ public class WorkbenchService {
             return 100;
         }
         long hours = ChronoUnit.HOURS.between(createdAt, LocalDateTime.now());
-        if (hours <= 1) return 100;
-        if (hours <= 6) return 90;
-        if (hours <= 12) return 80;
-        if (hours <= 24) return 70;
-        if (hours <= 48) return 60;
-        if (hours <= 72) return 50;
+        if (hours <= 1) {
+            return 100;
+        }
+        if (hours <= 6) {
+            return 90;
+        }
+        if (hours <= 12) {
+            return 80;
+        }
+        if (hours <= 24) {
+            return 70;
+        }
+        if (hours <= 48) {
+            return 60;
+        }
+        if (hours <= 72) {
+            return 50;
+        }
         return 40;
     }
 
     private String determinePriority(int totalScore) {
-        if (totalScore >= 120) return PRIORITY_HIGH;
-        if (totalScore >= 80) return PRIORITY_MEDIUM;
+        if (totalScore >= 120) {
+            return PRIORITY_HIGH;
+        }
+        if (totalScore >= 80) {
+            return PRIORITY_MEDIUM;
+        }
         return PRIORITY_LOW;
     }
 
@@ -426,56 +455,55 @@ public class WorkbenchService {
         }
     }
 
-    private List<WorkbenchItemVO.QuickAction> buildWarningQuickActions(HealthWarningRecord warning) {
-        List<WorkbenchItemVO.QuickAction> actions = new ArrayList<>();
-        String status = warning.getStatus();
+    private String resolveWarningStatusName(String status) {
+        HealthWarningStatus warningStatus = HealthWarningStatus.fromCode(status);
+        return warningStatus != null ? warningStatus.getDisplayName() : status;
+    }
 
-        if (HealthWarningStatus.PENDING.getCode().equals(status)) {
+    private List<WorkbenchItemVO.QuickAction> buildWarningQuickActions(HealthWarningRecord warning) {
+        List<WorkbenchItemVO.QuickAction> actions = new ArrayList<WorkbenchItemVO.QuickAction>();
+
+        WorkbenchItemVO.QuickAction openAction = new WorkbenchItemVO.QuickAction();
+        openAction.setActionKey("OPEN");
+        openAction.setActionName("查看/处理");
+        openAction.setActionType("PRIMARY");
+        openAction.setApiUrl("/warning?id=" + warning.getId());
+        openAction.setMethod("ROUTE");
+        openAction.setRequireConfirm(false);
+        actions.add(openAction);
+
+        if (HealthWarningStatus.PENDING.getCode().equals(warning.getStatus())) {
             WorkbenchItemVO.QuickAction readAction = new WorkbenchItemVO.QuickAction();
             readAction.setActionKey("READ");
             readAction.setActionName("标记已读");
-            readAction.setActionType("PRIMARY");
+            readAction.setActionType("INFO");
             readAction.setApiUrl("/api/warning/record/read/" + warning.getId());
             readAction.setMethod("PUT");
             readAction.setRequireConfirm(false);
             actions.add(readAction);
         }
 
-        if (Arrays.asList(HealthWarningStatus.PENDING.getCode(), HealthWarningStatus.READ.getCode(),
-                HealthWarningStatus.REOPENED.getCode(), HealthWarningStatus.ESCALATED.getCode()).contains(status)) {
-            WorkbenchItemVO.QuickAction handleAction = new WorkbenchItemVO.QuickAction();
-            handleAction.setActionKey("HANDLE");
-            handleAction.setActionName("处理预警");
-            handleAction.setActionType("SUCCESS");
-            handleAction.setApiUrl("/api/warning/record/handle/" + warning.getId());
-            handleAction.setMethod("PUT");
-            handleAction.setRequireConfirm(true);
-            handleAction.setConfirmText("确认处理该预警？");
-            actions.add(handleAction);
-
-            WorkbenchItemVO.QuickAction ignoreAction = new WorkbenchItemVO.QuickAction();
-            ignoreAction.setActionKey("IGNORE");
-            ignoreAction.setActionName("忽略预警");
-            ignoreAction.setActionType("DEFAULT");
-            ignoreAction.setApiUrl("/api/warning/record/ignore/" + warning.getId());
-            ignoreAction.setMethod("PUT");
-            ignoreAction.setRequireConfirm(true);
-            ignoreAction.setConfirmText("确认忽略该预警？");
-            actions.add(ignoreAction);
-        }
-
         return actions;
     }
 
     private List<WorkbenchItemVO.QuickAction> buildNotificationQuickActions(Notification notification) {
-        List<WorkbenchItemVO.QuickAction> actions = new ArrayList<>();
+        List<WorkbenchItemVO.QuickAction> actions = new ArrayList<WorkbenchItemVO.QuickAction>();
 
-        if (!"READ".equals(notification.getStatus())) {
+        WorkbenchItemVO.QuickAction openAction = new WorkbenchItemVO.QuickAction();
+        openAction.setActionKey("OPEN");
+        openAction.setActionName("打开通知");
+        openAction.setActionType("PRIMARY");
+        openAction.setApiUrl("/notification?id=" + notification.getId());
+        openAction.setMethod("ROUTE");
+        openAction.setRequireConfirm(false);
+        actions.add(openAction);
+
+        if (!"READ".equalsIgnoreCase(notification.getStatus())) {
             WorkbenchItemVO.QuickAction readAction = new WorkbenchItemVO.QuickAction();
             readAction.setActionKey("READ");
             readAction.setActionName("标记已读");
-            readAction.setActionType("PRIMARY");
-            readAction.setApiUrl("/api/notification/mark-read/" + notification.getId());
+            readAction.setActionType("INFO");
+            readAction.setApiUrl("/api/notification/read/" + notification.getId());
             readAction.setMethod("PUT");
             readAction.setRequireConfirm(false);
             actions.add(readAction);
@@ -485,17 +513,15 @@ public class WorkbenchService {
     }
 
     private List<WorkbenchItemVO.QuickAction> buildHealthRecordQuickActions(HealthRecord record) {
-        List<WorkbenchItemVO.QuickAction> actions = new ArrayList<>();
-
+        List<WorkbenchItemVO.QuickAction> actions = new ArrayList<WorkbenchItemVO.QuickAction>();
         WorkbenchItemVO.QuickAction viewAction = new WorkbenchItemVO.QuickAction();
         viewAction.setActionKey("VIEW");
         viewAction.setActionName("查看详情");
         viewAction.setActionType("PRIMARY");
-        viewAction.setApiUrl("/api/health/record/" + record.getId());
-        viewAction.setMethod("GET");
+        viewAction.setApiUrl("/health?elderlyId=" + record.getElderlyId() + "&recordId=" + record.getId());
+        viewAction.setMethod("ROUTE");
         viewAction.setRequireConfirm(false);
         actions.add(viewAction);
-
         return actions;
     }
 
@@ -504,24 +530,23 @@ public class WorkbenchService {
             return Collections.emptyMap();
         }
         List<Elderly> elderlyList = elderlyMapper.selectBatchIds(elderlyIds);
-        return elderlyList.stream()
-                .collect(Collectors.toMap(Elderly::getId, Elderly::getName, (a, b) -> a));
+        return elderlyList.stream().collect(Collectors.toMap(Elderly::getId, Elderly::getName, (a, b) -> a));
     }
 
     public List<Map<String, String>> getFilterOptions() {
-        List<Map<String, String>> options = new ArrayList<>();
+        List<Map<String, String>> options = new ArrayList<Map<String, String>>();
 
-        Map<String, String> typeOption1 = new HashMap<>();
+        Map<String, String> typeOption1 = new HashMap<String, String>();
         typeOption1.put("value", ITEM_TYPE_WARNING);
         typeOption1.put("label", "健康预警");
         options.add(typeOption1);
 
-        Map<String, String> typeOption2 = new HashMap<>();
+        Map<String, String> typeOption2 = new HashMap<String, String>();
         typeOption2.put("value", ITEM_TYPE_NOTIFICATION);
         typeOption2.put("label", "通知消息");
         options.add(typeOption2);
 
-        Map<String, String> typeOption3 = new HashMap<>();
+        Map<String, String> typeOption3 = new HashMap<String, String>();
         typeOption3.put("value", ITEM_TYPE_HEALTH_RECORD);
         typeOption3.put("label", "异常健康记录");
         options.add(typeOption3);
@@ -530,19 +555,19 @@ public class WorkbenchService {
     }
 
     public List<Map<String, String>> getPriorityOptions() {
-        List<Map<String, String>> options = new ArrayList<>();
+        List<Map<String, String>> options = new ArrayList<Map<String, String>>();
 
-        Map<String, String> option1 = new HashMap<>();
+        Map<String, String> option1 = new HashMap<String, String>();
         option1.put("value", PRIORITY_HIGH);
         option1.put("label", "高优先级");
         options.add(option1);
 
-        Map<String, String> option2 = new HashMap<>();
+        Map<String, String> option2 = new HashMap<String, String>();
         option2.put("value", PRIORITY_MEDIUM);
         option2.put("label", "中优先级");
         options.add(option2);
 
-        Map<String, String> option3 = new HashMap<>();
+        Map<String, String> option3 = new HashMap<String, String>();
         option3.put("value", PRIORITY_LOW);
         option3.put("label", "低优先级");
         options.add(option3);
