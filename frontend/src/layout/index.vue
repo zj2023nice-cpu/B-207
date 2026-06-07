@@ -88,6 +88,7 @@
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item command="profile">个人资料</el-dropdown-item>
                   <el-dropdown-item command="logout">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -140,7 +141,7 @@ const loadCurrentUser = async () => {
   try {
     const res = await request.get('/users/current')
     if (res.data) {
-      username.value = res.data.username
+      username.value = res.data.displayName || res.data.username
       isAdmin.value = res.data.role && res.data.role.toLowerCase() === 'admin'
       localStorage.setItem('user', JSON.stringify(res.data))
     }
@@ -168,7 +169,9 @@ onUnmounted(() => {
 })
 
 const handleCommand = async (command) => {
-  if (command === 'logout') {
+  if (command === 'profile') {
+    router.push('/profile')
+  } else if (command === 'logout') {
     try {
       await request.post('/users/logout')
     } catch (e) {

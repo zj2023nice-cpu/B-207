@@ -2,7 +2,9 @@ package com.smart.elderly.controller;
 
 import com.smart.elderly.annotation.OperationLog;
 import com.smart.elderly.common.Result;
+import com.smart.elderly.dto.ChangePasswordDTO;
 import com.smart.elderly.dto.LoginRequest;
+import com.smart.elderly.dto.UpdateProfileDTO;
 import com.smart.elderly.entity.User;
 import com.smart.elderly.service.CaptchaService;
 import com.smart.elderly.service.LoginAttemptService;
@@ -69,7 +71,10 @@ public class UserController {
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("id", dbUser.getId());
             userInfo.put("username", dbUser.getUsername());
+            userInfo.put("displayName", dbUser.getDisplayName());
+            userInfo.put("phone", dbUser.getPhone());
             userInfo.put("role", dbUser.getRole());
+            userInfo.put("lastLoginTime", dbUser.getLastLoginTime());
             
             return Result.success(userInfo);
         }
@@ -100,8 +105,67 @@ public class UserController {
         Map<String, Object> userInfo = new HashMap<>();
         userInfo.put("id", user.getId());
         userInfo.put("username", user.getUsername());
+        userInfo.put("displayName", user.getDisplayName());
+        userInfo.put("phone", user.getPhone());
         userInfo.put("role", user.getRole());
+        userInfo.put("lastLoginTime", user.getLastLoginTime());
         return Result.success(userInfo);
+    }
+
+    @GetMapping("/profile")
+    public Result<Map<String, Object>> getProfile(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return Result.error("用户未登录");
+        }
+        User user = (User) session.getAttribute(SESSION_USER_KEY);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+        Map<String, Object> profile = userService.getProfile(user.getId());
+        if (profile == null) {
+            return Result.error("用户不存在");
+        }
+        return Result.success(profile);
+    }
+
+    @OperationLog(operation = "更新个人资料", description = "用户更新个人资料")
+    @PutMapping("/profile")
+    public Result<String> updateProfile(@Valid @RequestBody UpdateProfileDTO dto, HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return Result.error("用户未登录");
+        }
+        User user = (User) session.getAttribute(SESSION_USER_KEY);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+        boolean success = userService.updateProfile(user.getId(), dto);
+        if (!success) {
+            return Result.error("更新失败");
+        }
+        User updatedUser = userService.getById(user.getId());
+        session.setAttribute(SESSION_USER_KEY, updatedUser);
+        return Result.success("资料更新成功");
+    }
+
+    @OperationLog(operation = "修改密码", description = "用户修改登录密码")
+    @PutMapping("/password")
+    public Result<String> changePassword(@Valid @RequestBody ChangePasswordDTO dto, HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return Result.error("用户未登录");
+        }
+        User user = (User) session.getAttribute(SESSION_USER_KEY);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+        String errorMsg = userService.changePassword(user.getId(), dto);
+        if (errorMsg != null) {
+            return Result.error(errorMsg);
+        }
+        session.invalidate();
+        return Result.success("密码修改成功，请重新登录");
     }
 
     @PostMapping("/logout")

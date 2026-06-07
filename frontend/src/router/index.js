@@ -95,6 +95,12 @@ const routes = [
                 name: 'SystemAnnouncementAdmin',
                 component: () => import('../views/SystemAnnouncementAdmin.vue'),
                 meta: { title: '公告管理' }
+            },
+            {
+                path: 'profile',
+                name: 'Profile',
+                component: () => import('../views/Profile.vue'),
+                meta: { title: '个人资料与安全设置' }
             }
         ]
     }
