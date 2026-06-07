@@ -58,14 +58,15 @@
         </el-alert>
       </div>
 
-      <div class="notification-list">
+      <div class="notification-list" ref="notificationListRef">
         <div
           v-for="item in notificationList"
           :key="item.id"
           class="notification-item"
-          :class="{ 
+          :class="{
             'unread': item.status === 'UNREAD',
-            'high-priority': item.highPriority 
+            'high-priority': item.highPriority,
+            'search-target': item.id === focusedNotificationId
           }"
           @click="handleRead(item)"
         >
@@ -94,12 +95,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage } from 'element-plus'
 
+const route = useRoute()
 const router = useRouter()
+const notificationListRef = ref(null)
 const notificationList = ref([])
 const unreadCount = ref(0)
 const highPriorityUnread = ref(0)
@@ -107,6 +110,8 @@ const normalUnread = ref(0)
 const preferenceEnabled = ref(false)
 const inDoNotDisturb = ref(false)
 const preference = ref(null)
+const focusedNotificationId = ref(null)
+const lastFocusedNotificationId = ref(null)
 
 const preferenceInfoText = computed(() => {
   if (!preference.value) return '消息偏好已启用'
@@ -123,9 +128,35 @@ const preferenceInfoText = computed(() => {
   return parts.length > 0 ? `当前配置：${parts.join('、')}` : '消息偏好已启用'
 })
 
+const getRouteNotificationId = () => {
+  const notificationId = Number(route.query.id)
+  return Number.isFinite(notificationId) && notificationId > 0 ? notificationId : null
+}
+
+const focusRouteNotification = async () => {
+  const notificationId = getRouteNotificationId()
+  focusedNotificationId.value = notificationId
+  if (!notificationId || lastFocusedNotificationId.value === notificationId) {
+    return
+  }
+
+  const target = notificationList.value.find(item => item.id === notificationId)
+  await nextTick()
+  if (!target) {
+    lastFocusedNotificationId.value = notificationId
+    ElMessage.warning('未找到对应通知，可能已失效或超出当前可见范围')
+    return
+  }
+
+  const targetNode = notificationListRef.value?.querySelector('.search-target')
+  targetNode?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  lastFocusedNotificationId.value = notificationId
+}
+
 const loadNotifications = async () => {
   const res = await request.get('/notification/list/with-preference')
   notificationList.value = res.data || []
+  await focusRouteNotification()
 }
 
 const loadUnreadCount = async () => {
@@ -159,7 +190,16 @@ const goToPreference = () => {
   router.push('/notification-preference')
 }
 
+watch(() => route.query.id, async () => {
+  lastFocusedNotificationId.value = null
+  focusedNotificationId.value = getRouteNotificationId()
+  if (getRouteNotificationId()) {
+    await focusRouteNotification()
+  }
+})
+
 onMounted(() => {
+  focusedNotificationId.value = getRouteNotificationId()
   reloadPageState()
 })
 </script>
@@ -242,6 +282,11 @@ onMounted(() => {
 
 .notification-item.high-priority.unread:hover {
   background-color: #FDE2E2;
+}
+
+.notification-item.search-target {
+  box-shadow: inset 0 0 0 2px #E6A23C;
+  background-color: #FFF7E6;
 }
 
 .notification-icon {

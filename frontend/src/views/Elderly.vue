@@ -355,12 +355,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, UploadFilled, Download } from '@element-plus/icons-vue'
 
+const route = useRoute()
 const router = useRouter()
 
 const loading = ref(false)
@@ -381,6 +382,7 @@ const originalTagIds = ref([])
 const isBatch = ref(false)
 const actionType = ref('bind')
 const followedMap = ref({})
+const lastFocusedElderlyId = ref(null)
 
 const importDialogVisible = ref(false)
 const importResultVisible = ref(false)
@@ -436,17 +438,36 @@ const loadTags = async () => {
   }
 }
 
+const getRouteElderlyId = () => {
+  const elderlyId = Number(route.query.elderlyId)
+  return Number.isFinite(elderlyId) && elderlyId > 0 ? elderlyId : null
+}
+
+const focusRouteElderly = () => {
+  const elderlyId = getRouteElderlyId()
+  if (!elderlyId || lastFocusedElderlyId.value === elderlyId) {
+    return
+  }
+
+  const targetRow = tableData.value.find(row => row.elderly?.id === elderlyId)
+  if (targetRow) {
+    handleView(targetRow)
+    lastFocusedElderlyId.value = elderlyId
+  }
+}
+
 const loadData = async () => {
   loading.value = true
   try {
     const res = await request.get('/elderly-tags/elderly/list-by-tag', {
-      params: { 
+      params: {
         tagId: selectedTagId.value,
         keyword: keyword.value
       }
     })
     tableData.value = res.data
     await loadFollowedMap()
+    focusRouteElderly()
   } catch (error) {
     console.error(error)
   } finally {
@@ -478,6 +499,15 @@ const handleToggleFollow = async (elderly) => {
     ElMessage.error('操作失败')
   }
 }
+
+watch(() => route.query.elderlyId, () => {
+  lastFocusedElderlyId.value = null
+  if (getRouteElderlyId()) {
+    selectedTagId.value = null
+    keyword.value = ''
+    loadData()
+  }
+})
 
 onMounted(() => {
   loadTags()

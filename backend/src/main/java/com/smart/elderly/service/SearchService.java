@@ -1,6 +1,7 @@
 package com.smart.elderly.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.smart.elderly.context.UserContextHolder;
 import com.smart.elderly.entity.*;
 import com.smart.elderly.mapper.*;
 import com.smart.elderly.vo.SearchResultItemVO;
@@ -24,7 +25,7 @@ public class SearchService {
     private HealthWarningRecordMapper healthWarningRecordMapper;
 
     @Autowired
-    private NotificationMapper notificationMapper;
+    private NotificationService notificationService;
 
     public SearchResultVO search(String keyword, List<String> modules, Integer limit) {
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -36,7 +37,8 @@ public class SearchService {
             return empty;
         }
 
-        String searchKeyword = "%" + keyword.trim() + "%";
+        String searchKeyword = keyword.trim();
+        Integer userId = UserContextHolder.getUserId();
         List<SearchResultItemVO> allItems = new ArrayList<>();
         Map<String, Long> moduleCounts = new LinkedHashMap<>();
 
@@ -59,7 +61,7 @@ public class SearchService {
         }
 
         if (modules == null || modules.isEmpty() || modules.contains("notification")) {
-            List<SearchResultItemVO> notificationItems = searchNotifications(searchKeyword, limit);
+            List<SearchResultItemVO> notificationItems = searchNotifications(searchKeyword, limit, userId);
             moduleCounts.put("notification", (long) notificationItems.size());
             allItems.addAll(notificationItems);
         }
@@ -102,7 +104,10 @@ public class SearchService {
             if (e.getGender() != null) desc.append(e.getGender()).append(" ");
             if (e.getPhone() != null) desc.append(e.getPhone());
             item.setDescription(desc.toString());
-            item.setRoutePath("/elderly");
+            item.setRoutePath("/elderly?elderlyId=" + e.getId());
+            item.setTargetType("elderly");
+            item.setTargetId(e.getId());
+            item.setTargetElderlyId(e.getId());
             item.setTime(e.getUpdatedAt() != null ? e.getUpdatedAt() : e.getCreatedAt());
             item.setExtraInfo(e.getStatus());
             return item;
@@ -134,7 +139,10 @@ public class SearchService {
             String elderlyName = finalElderlyNameMap.getOrDefault(r.getElderlyId(), "未知老人");
             item.setTitle(elderlyName + " - 异常记录");
             item.setDescription(r.getAbnormalReason());
-            item.setRoutePath("/health?elderlyId=" + r.getElderlyId());
+            item.setRoutePath("/health?elderlyId=" + r.getElderlyId() + "&recordId=" + r.getId());
+            item.setTargetType("health_record");
+            item.setTargetId(r.getId());
+            item.setTargetElderlyId(r.getElderlyId());
             item.setTime(r.getCheckTime());
             item.setExtraInfo(r.getCorrected() != null && r.getCorrected() ? "已修正" : "未修正");
             return item;
@@ -168,50 +176,48 @@ public class SearchService {
             item.setTitle(elderlyName + " - " + w.getWarningLevel() + "预警");
             item.setDescription(w.getWarningMessage());
             item.setRoutePath("/warning?id=" + w.getId());
+            item.setTargetType("warning");
+            item.setTargetId(w.getId());
+            item.setTargetElderlyId(w.getElderlyId());
             item.setTime(w.getCreatedAt());
             item.setExtraInfo(w.getStatus());
             return item;
         }).collect(Collectors.toList());
     }
 
-    private List<SearchResultItemVO> searchNotifications(String keyword, Integer limit) {
-        LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(Notification::getTitle, keyword)
-                .or().like(Notification::getContent, keyword)
-                .orderByDesc(Notification::getCreatedAt)
-                .last(limit != null ? "LIMIT " + limit : "");
-
-        List<Notification> list = notificationMapper.selectList(wrapper);
-        Set<Integer> elderlyIds = list.stream()
-                .filter(n -> n.getElderlyId() != null)
-                .map(Notification::getElderlyId)
-                .collect(Collectors.toSet());
-        Map<Integer, String> elderlyNameMap = new HashMap<>();
-        if (!elderlyIds.isEmpty()) {
-            List<Elderly> elderlyList = elderlyMapper.selectBatchIds(elderlyIds);
-            elderlyNameMap = elderlyList.stream().collect(Collectors.toMap(Elderly::getId, Elderly::getName));
+    private List<SearchResultItemVO> searchNotifications(String keyword, Integer limit, Integer userId) {
+        if (userId == null) {
+            return Collections.emptyList();
         }
 
-        final Map<Integer, String> finalElderlyNameMap = elderlyNameMap;
-        return list.stream().map(n -> {
-            SearchResultItemVO item = new SearchResultItemVO();
-            item.setId(n.getId());
-            item.setModule("notification");
-            item.setModuleName("通知消息");
-            item.setTitle(n.getTitle());
-            item.setDescription(n.getContent());
-            if (n.getElderlyId() != null) {
-                item.setRoutePath("/notification?elderlyId=" + n.getElderlyId());
-            } else {
-                item.setRoutePath("/notification");
-            }
-            item.setTime(n.getCreatedAt());
-            String status = n.getStatus();
-            if (n.getInvalidated() != null && n.getInvalidated()) {
-                status = "已失效";
-            }
-            item.setExtraInfo(status);
-            return item;
-        }).collect(Collectors.toList());
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+        return notificationService.getAllWithPreference(userId).stream()
+                .filter(n -> containsIgnoreCase(n.getTitle(), normalizedKeyword)
+                        || containsIgnoreCase(n.getContent(), normalizedKeyword))
+                .limit(limit != null ? limit : Long.MAX_VALUE)
+                .map(n -> {
+                    SearchResultItemVO item = new SearchResultItemVO();
+                    item.setId(n.getId());
+                    item.setModule("notification");
+                    item.setModuleName("通知消息");
+                    item.setTitle(n.getTitle());
+                    item.setDescription(n.getContent());
+                    item.setRoutePath("/notification?id=" + n.getId());
+                    item.setTargetType("notification");
+                    item.setTargetId(n.getId());
+                    item.setTargetElderlyId(n.getElderlyId());
+                    item.setTime(n.getCreatedAt());
+                    String status = n.getStatus();
+                    if (n.getInvalidated() != null && n.getInvalidated()) {
+                        status = "已失效";
+                    }
+                    item.setExtraInfo(status);
+                    return item;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private boolean containsIgnoreCase(String text, String normalizedKeyword) {
+        return text != null && text.toLowerCase(Locale.ROOT).contains(normalizedKeyword);
     }
 }

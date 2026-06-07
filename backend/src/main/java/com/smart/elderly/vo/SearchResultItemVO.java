@@ -11,6 +11,9 @@ public class SearchResultItemVO {
     private String title;
     private String description;
     private String routePath;
+    private String targetType;
+    private Integer targetId;
+    private Integer targetElderlyId;
     private LocalDateTime time;
     private String extraInfo;
 }

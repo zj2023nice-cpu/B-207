@@ -224,11 +224,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage } from 'element-plus'
 
+const route = useRoute()
 const router = useRouter()
 
 const loading = ref(false)
@@ -241,6 +242,7 @@ const detailDialogVisible = ref(false)
 const currentWarning = ref(null)
 const currentAction = ref('')
 const detailData = ref(null)
+const lastFocusedWarningId = ref(null)
 
 const actionForm = ref({
   operator: '',
@@ -389,6 +391,33 @@ const loadAllStatuses = async () => {
   }
 }
 
+const getRouteWarningId = () => {
+  const warningId = Number(route.query.id)
+  return Number.isFinite(warningId) && warningId > 0 ? warningId : null
+}
+
+const focusRouteWarning = async () => {
+  const warningId = getRouteWarningId()
+  if (!warningId || lastFocusedWarningId.value === warningId) {
+    return
+  }
+
+  let targetRow = warningList.value.find(item => item.id === warningId)
+  if (!targetRow && filterStatus.value) {
+    filterStatus.value = null
+    await loadWarnings()
+    targetRow = warningList.value.find(item => item.id === warningId)
+  }
+
+  if (targetRow) {
+    await showDetailDialog(targetRow)
+    lastFocusedWarningId.value = warningId
+  } else {
+    lastFocusedWarningId.value = warningId
+    ElMessage.warning('未找到对应预警记录，可能已不可见或状态已变化')
+  }
+}
+
 const loadWarnings = async () => {
   loading.value = true
   try {
@@ -487,9 +516,17 @@ const handleExport = async () => {
   }
 }
 
-onMounted(() => {
-  loadAllStatuses()
-  loadWarnings()
+watch(() => route.query.id, async () => {
+  lastFocusedWarningId.value = null
+  if (getRouteWarningId()) {
+    await focusRouteWarning()
+  }
+})
+
+onMounted(async () => {
+  await loadAllStatuses()
+  await loadWarnings()
+  await focusRouteWarning()
 })
 </script>
 

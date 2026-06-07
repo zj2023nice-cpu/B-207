@@ -84,11 +84,11 @@
               </div>
             </div>
           </template>
-          <el-table :data="historyData" border style="width: 100%" v-loading="loading" max-height="400">
+          <el-table :data="historyData" border style="width: 100%" v-loading="loading" max-height="400" row-key="id">
             <el-table-column prop="elderlyName" label="姓名" width="100" />
             <el-table-column label="血压" width="140">
               <template #default="scope">
-                <span :class="{ 'abnormal': isBloodPressureAbnormal(scope.row) }">
+                <span :class="{ 'abnormal': isBloodPressureAbnormal(scope.row), 'search-target-cell': scope.row.id === highlightedRecordId }">
                   {{ scope.row.systolicPressure }}/{{ scope.row.diastolicPressure }} mmHg
                 </span>
               </template>
@@ -230,12 +230,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 
+const route = useRoute()
 const router = useRouter()
 
 const loading = ref(false)
@@ -245,6 +246,7 @@ const historyData = ref([])
 const chartRef = ref(null)
 const filterElderlyId = ref(null)
 const filterIsAbnormal = ref(null)
+const highlightedRecordId = ref(null)
 let chartInstance = null
 
 const correctionDialogVisible = ref(false)
@@ -300,6 +302,31 @@ const isBloodSugarAbnormal = (bloodSugar) => {
   return bloodSugar > 6.1 || bloodSugar < 3.9
 }
 
+const getRouteNumber = (value) => {
+  const num = Number(value)
+  return Number.isFinite(num) && num > 0 ? num : null
+}
+
+const getRouteElderlyId = () => getRouteNumber(route.query.elderlyId)
+const getRouteRecordId = () => getRouteNumber(route.query.recordId)
+
+const focusRouteRecord = async () => {
+  const recordId = getRouteRecordId()
+  highlightedRecordId.value = recordId
+  if (!recordId) {
+    return
+  }
+
+  const targetRow = historyData.value.find(row => row.id === recordId)
+  if (!targetRow) {
+    return
+  }
+
+  await nextTick()
+  const targetCell = document.querySelector('.search-target-cell')
+  targetCell?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
 const loadElderly = async () => {
   const res = await request.get('/elderly/list')
   elderlyList.value = res.data
@@ -314,7 +341,8 @@ const loadHistory = async () => {
         isAbnormal: filterIsAbnormal.value
       }
     })
-    historyData.value = res.data
+    historyData.value = res.data || []
+    await focusRouteRecord()
   } finally {
     loading.value = false
   }
@@ -334,6 +362,22 @@ const loadTrendData = async () => {
   } finally {
     chartLoading.value = false
   }
+}
+
+const applyRouteTarget = async () => {
+  const elderlyId = getRouteElderlyId()
+  highlightedRecordId.value = getRouteRecordId()
+
+  if (elderlyId) {
+    filterElderlyId.value = elderlyId
+    selectedElderlyId.value = elderlyId
+    await Promise.all([loadHistory(), loadTrendData()])
+    return
+  }
+
+  selectedElderlyId.value = null
+  highlightedRecordId.value = null
+  await loadHistory()
 }
 
 const initChart = () => {
@@ -483,19 +527,19 @@ const handleSave = async () => {
     ElMessage.warning('请选择老人')
     return
   }
-  
+
   await request.post('/health/add', healthForm.value)
-  
+
   const hasAbnormal = checkHasAbnormal()
   if (hasAbnormal) {
     ElMessage.error('警告：存在异常指标！已自动标记。')
   } else {
     ElMessage.success('保存成功')
   }
-  
-  loadHistory()
+
+  await loadHistory()
   if (selectedElderlyId.value === healthForm.value.elderlyId) {
-    loadTrendData()
+    await loadTrendData()
   }
 }
 
@@ -510,10 +554,14 @@ const checkHasAbnormal = () => {
   return false
 }
 
-onMounted(() => {
-  loadElderly()
-  loadHistory()
+watch(() => [route.query.elderlyId, route.query.recordId], async () => {
+  await applyRouteTarget()
+})
+
+onMounted(async () => {
+  await loadElderly()
   initChart()
+  await applyRouteTarget()
 })
 
 const handleExport = async () => {
@@ -576,9 +624,9 @@ const submitCorrection = async () => {
     await request.post('/health/correction/create', correctionForm.value)
     ElMessage.success('更正成功，异常判断和预警已重新计算')
     correctionDialogVisible.value = false
-    loadHistory()
+    await loadHistory()
     if (selectedElderlyId.value === currentCorrectionRecord.value.elderlyId) {
-      loadTrendData()
+      await loadTrendData()
     }
   } catch (error) {
     console.error(error)
@@ -643,6 +691,13 @@ onUnmounted(() => {
 .abnormal-reason {
   color: #909399;
   font-size: 12px;
+}
+
+.search-target-cell {
+  background: #fff3cd;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(230, 162, 60, 0.35);
 }
 
 .history-data {

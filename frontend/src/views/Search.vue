@@ -141,7 +141,7 @@ const doSearch = async () => {
   
   loading.value = true
   try {
-    const res = await request.get('/api/search', {
+    const res = await request.get('/search', {
       params: {
         keyword: keyword.value.trim(),
         limit: 50
@@ -175,9 +175,52 @@ const filterResults = () => {
   }
 }
 
+const buildRouteLocation = (item) => {
+  switch (item.targetType || item.module) {
+    case 'elderly':
+      if (item.targetElderlyId) {
+        return {
+          path: '/elderly',
+          query: { elderlyId: item.targetElderlyId }
+        }
+      }
+      break
+    case 'health_record':
+      if (item.targetElderlyId && item.targetId) {
+        return {
+          path: '/health',
+          query: {
+            elderlyId: item.targetElderlyId,
+            recordId: item.targetId
+          }
+        }
+      }
+      break
+    case 'warning':
+      if (item.targetId) {
+        return {
+          path: '/warning',
+          query: { id: item.targetId }
+        }
+      }
+      break
+    case 'notification':
+      if (item.targetId) {
+        return {
+          path: '/notification',
+          query: { id: item.targetId }
+        }
+      }
+      break
+  }
+
+  return item.routePath || null
+}
+
 const goToItem = (item) => {
-  if (item.routePath) {
-    router.push(item.routePath)
+  const target = buildRouteLocation(item)
+  if (target) {
+    router.push(target)
   }
 }
 
