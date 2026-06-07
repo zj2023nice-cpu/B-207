@@ -17,7 +17,10 @@ public class HealthWarningRecordController {
     private HealthWarningRecordService warningRecordService;
 
     @GetMapping("/list")
-    public Result<List<HealthWarningRecord>> list() {
+    public Result<List<HealthWarningRecord>> list(@RequestParam(required = false) String status) {
+        if (status != null && !status.isEmpty()) {
+            return Result.success(warningRecordService.getByStatus(status));
+        }
         return Result.success(warningRecordService.getAllWithElderlyName());
     }
 

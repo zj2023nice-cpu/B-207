@@ -18,7 +18,12 @@ public class HealthRecordController {
     private HealthRecordService healthRecordService;
 
     @GetMapping("/history")
-    public Result<List<HealthRecord>> history() {
+    public Result<List<HealthRecord>> history(
+            @RequestParam(required = false) Integer elderlyId,
+            @RequestParam(required = false) Boolean isAbnormal) {
+        if (elderlyId != null || isAbnormal != null) {
+            return Result.success(healthRecordService.getRecordsWithFilters(elderlyId, isAbnormal));
+        }
         return Result.success(healthRecordService.getRecordsWithNames());
     }
 

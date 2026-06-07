@@ -1,23 +1,26 @@
 package com.smart.elderly.export.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.smart.elderly.entity.Elderly;
+import com.smart.elderly.export.BaseExportProvider;
 import com.smart.elderly.export.ElderlyExcelVO;
-import com.smart.elderly.export.ExportDataProvider;
 import com.smart.elderly.mapper.ElderlyMapper;
+import com.smart.elderly.service.ElderlyTagRelationService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Component
-public class ElderlyExportProvider implements ExportDataProvider<ElderlyExcelVO> {
+public class ElderlyExportProvider extends BaseExportProvider<ElderlyExcelVO> {
 
     @Autowired
     private ElderlyMapper elderlyMapper;
+
+    @Autowired
+    private ElderlyTagRelationService elderlyTagRelationService;
 
     @Override
     public String getExportType() {
@@ -48,7 +51,29 @@ public class ElderlyExportProvider implements ExportDataProvider<ElderlyExcelVO>
 
     @Override
     public List<ElderlyExcelVO> fetchData(String exportParams) {
-        List<Elderly> elderlyList = elderlyMapper.selectList(new QueryWrapper<>());
+        Map<String, Object> params = parseExportParams(exportParams);
+        Integer tagId = getIntegerParam(params, "tagId");
+        String keyword = getStringParam(params, "keyword");
+
+        List<Elderly> elderlyList;
+        if (tagId != null) {
+            List<Integer> elderlyIds = elderlyTagRelationService.getElderlyIdsByTagId(tagId);
+            if (elderlyIds.isEmpty()) {
+                elderlyList = new ArrayList<>();
+            } else {
+                elderlyList = elderlyMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Elderly>()
+                        .in("id", elderlyIds)
+                        .like(keyword != null && !keyword.isEmpty(), "name", keyword)
+                );
+            }
+        } else {
+            elderlyList = elderlyMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Elderly>()
+                    .like(keyword != null && !keyword.isEmpty(), "name", keyword)
+            );
+        }
+
         List<ElderlyExcelVO> result = new ArrayList<>();
         for (Elderly elderly : elderlyList) {
             ElderlyExcelVO vo = new ElderlyExcelVO();
@@ -77,6 +102,6 @@ public class ElderlyExportProvider implements ExportDataProvider<ElderlyExcelVO>
 
     @Override
     public String generateFileName() {
-        return "老人数据_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        return generateFileName("老人数据");
     }
 }

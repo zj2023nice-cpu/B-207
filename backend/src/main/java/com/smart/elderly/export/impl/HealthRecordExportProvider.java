@@ -1,30 +1,22 @@
 package com.smart.elderly.export.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.smart.elderly.entity.Elderly;
 import com.smart.elderly.entity.HealthRecord;
-import com.smart.elderly.export.ExportDataProvider;
+import com.smart.elderly.export.BaseExportProvider;
 import com.smart.elderly.export.HealthRecordExcelVO;
-import com.smart.elderly.mapper.ElderlyMapper;
 import com.smart.elderly.mapper.HealthRecordMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
-public class HealthRecordExportProvider implements ExportDataProvider<HealthRecordExcelVO> {
+public class HealthRecordExportProvider extends BaseExportProvider<HealthRecordExcelVO> {
 
     @Autowired
     private HealthRecordMapper healthRecordMapper;
-
-    @Autowired
-    private ElderlyMapper elderlyMapper;
 
     @Override
     public String getExportType() {
@@ -56,12 +48,12 @@ public class HealthRecordExportProvider implements ExportDataProvider<HealthReco
 
     @Override
     public List<HealthRecordExcelVO> fetchData(String exportParams) {
-        List<HealthRecord> records = healthRecordMapper.selectList(new QueryWrapper<>());
-        Map<Integer, String> elderlyNameMap = new HashMap<>();
-        List<Elderly> elderlyList = elderlyMapper.selectList(new QueryWrapper<>());
-        for (Elderly e : elderlyList) {
-            elderlyNameMap.put(e.getId(), e.getName());
-        }
+        Map<String, Object> params = parseExportParams(exportParams);
+        Integer elderlyId = getIntegerParam(params, "elderlyId");
+        Boolean isAbnormal = getBooleanParam(params, "isAbnormal");
+
+        List<HealthRecord> records = healthRecordMapper.selectWithFilters(elderlyId, isAbnormal);
+        Map<Integer, String> elderlyNameMap = getElderlyNameMap();
 
         List<HealthRecordExcelVO> result = new ArrayList<>();
         for (HealthRecord record : records) {
@@ -94,6 +86,6 @@ public class HealthRecordExportProvider implements ExportDataProvider<HealthReco
 
     @Override
     public String generateFileName() {
-        return "健康记录_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        return generateFileName("健康记录");
     }
 }

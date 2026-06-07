@@ -69,10 +69,19 @@
           <template #header>
             <div class="card-header">
               <span>历史健康记录</span>
-              <el-button type="primary" size="small" @click="handleExport">
-                <el-icon><Download /></el-icon>
-                导出数据
-              </el-button>
+              <div class="header-filters">
+                <el-select v-model="filterElderlyId" placeholder="按老人筛选" clearable @change="loadHistory" style="width: 150px; margin-right: 10px;">
+                  <el-option v-for="item in elderlyList" :key="item.id" :label="item.name" :value="item.id" />
+                </el-select>
+                <el-select v-model="filterIsAbnormal" placeholder="按状态筛选" clearable @change="loadHistory" style="width: 120px; margin-right: 10px;">
+                  <el-option label="异常" :value="true" />
+                  <el-option label="正常" :value="false" />
+                </el-select>
+                <el-button type="primary" size="small" @click="handleExport">
+                  <el-icon><Download /></el-icon>
+                  导出数据
+                </el-button>
+              </div>
             </div>
           </template>
           <el-table :data="historyData" border style="width: 100%" v-loading="loading" max-height="400">
@@ -145,6 +154,8 @@ const chartLoading = ref(false)
 const elderlyList = ref([])
 const historyData = ref([])
 const chartRef = ref(null)
+const filterElderlyId = ref(null)
+const filterIsAbnormal = ref(null)
 let chartInstance = null
 
 const healthForm = ref({
@@ -189,7 +200,12 @@ const loadElderly = async () => {
 const loadHistory = async () => {
   loading.value = true
   try {
-    const res = await request.get('/health/history')
+    const res = await request.get('/health/history', {
+      params: {
+        elderlyId: filterElderlyId.value,
+        isAbnormal: filterIsAbnormal.value
+      }
+    })
     historyData.value = res.data
   } finally {
     loading.value = false
@@ -394,11 +410,26 @@ onMounted(() => {
 
 const handleExport = async () => {
   try {
-    const exportParams = JSON.stringify({})
+    const exportParams = JSON.stringify({
+      elderlyId: filterElderlyId.value,
+      isAbnormal: filterIsAbnormal.value
+    })
+    let rangeDesc = '全部健康记录'
+    const descParts = []
+    if (filterElderlyId.value) {
+      const elderly = elderlyList.value.find(e => e.id === filterElderlyId.value)
+      descParts.push(elderly ? `老人: ${elderly.name}` : `老人ID: ${filterElderlyId.value}`)
+    }
+    if (filterIsAbnormal.value !== null && filterIsAbnormal.value !== undefined) {
+      descParts.push(`状态: ${filterIsAbnormal.value ? '异常' : '正常'}`)
+    }
+    if (descParts.length > 0) {
+      rangeDesc = descParts.join('，')
+    }
     const res = await request.post('/export-task/create', {
       exportType: 'HEALTH_RECORD',
       exportParams: exportParams,
-      exportRangeDesc: '全部健康记录',
+      exportRangeDesc: rangeDesc,
       taskName: '健康记录导出'
     })
     ElMessage.success('导出任务已创建，请在导出任务中心查看进度')
@@ -425,6 +456,11 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   font-weight: bold;
+}
+
+.header-filters {
+  display: flex;
+  align-items: center;
 }
 
 .chart-controls {

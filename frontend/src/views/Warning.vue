@@ -167,11 +167,11 @@ const getStatusName = (status) => statusNames[status] || status
 const loadWarnings = async () => {
   loading.value = true
   try {
-    let url = '/warning/record/list'
-    if (filterStatus.value === 'PENDING') {
-      url = '/warning/record/pending'
-    }
-    const res = await request.get(url)
+    const res = await request.get('/warning/record/list', {
+      params: {
+        status: filterStatus.value
+      }
+    })
     warningList.value = res.data || []
   } finally {
     loading.value = false

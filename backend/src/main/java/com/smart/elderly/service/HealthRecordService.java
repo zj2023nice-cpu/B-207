@@ -234,6 +234,10 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
         return baseMapper.selectWithElderlyName();
     }
 
+    public List<HealthRecord> getRecordsWithFilters(Integer elderlyId, Boolean isAbnormal) {
+        return baseMapper.selectWithFilters(elderlyId, isAbnormal);
+    }
+
     public List<HealthRecord> getByElderlyId(Integer elderlyId) {
         LambdaQueryWrapper<HealthRecord> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HealthRecord::getElderlyId, elderlyId)
