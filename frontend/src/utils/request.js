@@ -23,7 +23,7 @@ service.interceptors.response.use(
         const res = response.data
         if (res.code !== 200) {
             ElMessage.error(res.message || 'Error')
-            if (res.message && (res.message.includes('未登录') || res.message.includes('登录已过期'))) {
+            if (res.message && (res.message.includes('未登录') || res.message.includes('登录已过期') || res.message.includes('会话已失效'))) {
                 localStorage.removeItem('user')
                 router.push('/login')
             }

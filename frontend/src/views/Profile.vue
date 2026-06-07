@@ -70,6 +70,61 @@
             </el-form-item>
           </el-form>
         </el-tab-pane>
+
+        <el-tab-pane label="登录会话管理" name="sessions">
+          <div class="sessions-container">
+            <div class="sessions-header">
+              <span>最近登录记录与活跃会话</span>
+              <el-button type="primary" size="small" @click="loadSessions" :icon="Refresh">刷新</el-button>
+            </div>
+            <el-table :data="sessionsList" v-loading="sessionsLoading" stripe>
+              <el-table-column prop="loginTime" label="登录时间" width="180">
+                <template #default="{ row }">
+                  {{ formatDateTime(row.loginTime) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="loginIp" label="来源IP" width="140" />
+              <el-table-column prop="os" label="操作系统" width="120" />
+              <el-table-column prop="browser" label="浏览器" width="150" />
+              <el-table-column prop="deviceType" label="设备类型" width="100">
+                <template #default="{ row }">
+                  {{ getDeviceTypeLabel(row.deviceType) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="lastActiveTime" label="最后活跃" width="180">
+                <template #default="{ row }">
+                  {{ formatDateTime(row.lastActiveTime) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="status" label="状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getStatusType(row.status)" size="small">
+                    {{ getStatusLabel(row.status) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="当前会话" width="100">
+                <template #default="{ row }">
+                  <el-tag v-if="row.isCurrent" type="success" size="small">当前</el-tag>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="120">
+                <template #default="{ row }">
+                  <el-button
+                    v-if="!row.isCurrent && row.status === 'ACTIVE'"
+                    type="danger"
+                    size="small"
+                    @click="handleInvalidateSession(row)"
+                  >
+                    使失效
+                  </el-button>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
@@ -80,13 +135,16 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const activeTab = ref('profile')
 const profileLoading = ref(false)
 const passwordLoading = ref(false)
+const sessionsLoading = ref(false)
 const profileFormRef = ref(null)
 const passwordFormRef = ref(null)
+const sessionsList = ref([])
 
 const profileForm = ref({
   username: '',
@@ -256,8 +314,79 @@ const handleChangePassword = async () => {
   }
 }
 
+const getDeviceTypeLabel = (type) => {
+  const typeMap = {
+    'COMPUTER': '电脑',
+    'MOBILE': '手机',
+    'TABLET': '平板',
+    'UNKNOWN': '未知'
+  }
+  return typeMap[type] || type || '未知'
+}
+
+const getStatusLabel = (status) => {
+  const statusMap = {
+    'ACTIVE': '活跃',
+    'EXPIRED': '已过期',
+    'INVALIDATED': '已失效',
+    'LOGOUT': '已退出'
+  }
+  return statusMap[status] || status || '未知'
+}
+
+const getStatusType = (status) => {
+  const typeMap = {
+    'ACTIVE': 'success',
+    'EXPIRED': 'info',
+    'INVALIDATED': 'danger',
+    'LOGOUT': 'warning'
+  }
+  return typeMap[status] || 'info'
+}
+
+const loadSessions = async () => {
+  sessionsLoading.value = true
+  try {
+    const res = await request.get('/user-sessions/my-sessions')
+    if (res.data) {
+      sessionsList.value = res.data
+    }
+  } catch (error) {
+    console.error('加载会话列表失败:', error)
+    ElMessage.error('加载会话列表失败')
+  } finally {
+    sessionsLoading.value = false
+  }
+}
+
+const handleInvalidateSession = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要使该会话失效吗？该设备将需要重新登录。\n登录IP: ${row.loginIp}\n浏览器: ${row.browser}`,
+      '确认使会话失效',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+  } catch {
+    return
+  }
+
+  try {
+    await request.post(`/user-sessions/invalidate/${row.id}`)
+    ElMessage.success('会话已失效')
+    loadSessions()
+  } catch (error) {
+    console.error('使会话失效失败:', error)
+    ElMessage.error(error.message || '操作失败')
+  }
+}
+
 onMounted(() => {
   loadProfile()
+  loadSessions()
 })
 </script>
 
@@ -281,5 +410,19 @@ onMounted(() => {
 .password-form {
   max-width: 500px;
   padding: 20px 0;
+}
+
+.sessions-container {
+  padding: 20px 0;
+}
+
+.sessions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
 }
 </style>

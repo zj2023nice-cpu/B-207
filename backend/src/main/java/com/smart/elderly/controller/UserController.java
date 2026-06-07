@@ -9,6 +9,7 @@ import com.smart.elderly.entity.User;
 import com.smart.elderly.service.CaptchaService;
 import com.smart.elderly.service.LoginAttemptService;
 import com.smart.elderly.service.UserService;
+import com.smart.elderly.service.UserSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,9 @@ public class UserController {
 
     @Autowired
     private CaptchaService captchaService;
+
+    @Autowired
+    private UserSessionService userSessionService;
 
     @GetMapping("/captcha")
     public Result<Map<String, String>> getCaptcha() {
@@ -67,6 +71,8 @@ public class UserController {
             HttpSession session = httpRequest.getSession(true);
             session.setAttribute(SESSION_USER_KEY, dbUser);
             session.setMaxInactiveInterval(3600 * 24);
+
+            userSessionService.recordLoginSession(dbUser, httpRequest);
 
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("id", dbUser.getId());
@@ -164,14 +170,19 @@ public class UserController {
         if (errorMsg != null) {
             return Result.error(errorMsg);
         }
+        String sessionId = session.getId();
+        userSessionService.markSessionLogout(sessionId);
         session.invalidate();
         return Result.success("密码修改成功，请重新登录");
     }
 
+    @OperationLog(operation = "用户登出", description = "用户退出登录")
     @PostMapping("/logout")
     public Result<String> logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) {
+            String sessionId = session.getId();
+            userSessionService.markSessionLogout(sessionId);
             session.invalidate();
         }
         return Result.success("退出成功");
