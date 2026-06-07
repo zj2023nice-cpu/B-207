@@ -2,8 +2,10 @@ package com.smart.elderly.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smart.elderly.common.SecurityConstants;
 import com.smart.elderly.entity.User;
 import com.smart.elderly.entity.UserSession;
+import com.smart.elderly.enums.UserSessionStatus;
 import com.smart.elderly.mapper.UserSessionMapper;
 import com.smart.elderly.vo.UserSessionVO;
 import eu.bitwalker.useragentutils.UserAgent;
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 @Service
 public class UserSessionService extends ServiceImpl<UserSessionMapper, UserSession> {
 
-    public static final String SESSION_USER_KEY = "LOGIN_USER";
+    public static final String SESSION_USER_KEY = SecurityConstants.SESSION_USER_KEY;
 
     public String recordLoginSession(User user, HttpServletRequest request) {
         HttpSession session = request.getSession(true);
@@ -41,10 +43,10 @@ public class UserSessionService extends ServiceImpl<UserSessionMapper, UserSessi
         userSession.setDeviceType(deviceType);
         userSession.setBrowser(browser);
         userSession.setOs(os);
-        userSession.setStatus("ACTIVE");
+        userSession.setStatus(UserSessionStatus.ACTIVE.getCode());
         userSession.setLoginTime(LocalDateTime.now());
         userSession.setLastActiveTime(LocalDateTime.now());
-        userSession.setExpireTime(LocalDateTime.now().plusHours(24));
+        userSession.setExpireTime(LocalDateTime.now().plusHours(SecurityConstants.DEFAULT_SESSION_EXPIRE_HOURS));
 
         this.save(userSession);
 
@@ -88,8 +90,9 @@ public class UserSessionService extends ServiceImpl<UserSessionMapper, UserSessi
         if (!session.getUserId().equals(currentUserId)) {
             return false;
         }
-        if ("ACTIVE".equals(session.getStatus())) {
-            session.setStatus("INVALIDATED");
+        UserSessionStatus currentStatus = UserSessionStatus.fromCode(session.getStatus());
+        if (currentStatus.isActive()) {
+            session.setStatus(UserSessionStatus.INVALIDATED.getCode());
             session.setInvalidatedAt(LocalDateTime.now());
             session.setInvalidatedBy(operatorId);
             this.updateById(session);
@@ -101,7 +104,8 @@ public class UserSessionService extends ServiceImpl<UserSessionMapper, UserSessi
         LambdaQueryWrapper<UserSession> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSession::getSessionId, sessionId);
         UserSession session = this.getOne(wrapper);
-        if (session != null && "ACTIVE".equals(session.getStatus())) {
+        UserSessionStatus status = UserSessionStatus.fromCode(session != null ? session.getStatus() : null);
+        if (session != null && status.isActive()) {
             session.setLastActiveTime(LocalDateTime.now());
             this.updateById(session);
         }
@@ -114,7 +118,8 @@ public class UserSessionService extends ServiceImpl<UserSessionMapper, UserSessi
         if (session == null) {
             return true;
         }
-        return "ACTIVE".equals(session.getStatus()) &&
+        UserSessionStatus status = UserSessionStatus.fromCode(session.getStatus());
+        return status.isActive() &&
                 (session.getExpireTime() == null || session.getExpireTime().isAfter(LocalDateTime.now()));
     }
 
@@ -122,8 +127,9 @@ public class UserSessionService extends ServiceImpl<UserSessionMapper, UserSessi
         LambdaQueryWrapper<UserSession> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSession::getSessionId, sessionId);
         UserSession session = this.getOne(wrapper);
-        if (session != null && "ACTIVE".equals(session.getStatus())) {
-            session.setStatus("LOGOUT");
+        UserSessionStatus status = UserSessionStatus.fromCode(session != null ? session.getStatus() : null);
+        if (session != null && status.isActive()) {
+            session.setStatus(UserSessionStatus.LOGOUT.getCode());
             session.setInvalidatedAt(LocalDateTime.now());
             this.updateById(session);
         }

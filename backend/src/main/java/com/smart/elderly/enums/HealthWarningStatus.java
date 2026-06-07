@@ -83,4 +83,20 @@ public enum HealthWarningStatus {
     public boolean canTransitionTo(HealthWarningStatus target) {
         return getAllowedTransitions().contains(target);
     }
+
+    public static List<String> getPendingStatusCodes() {
+        return Arrays.asList(PENDING.getCode(), REOPENED.getCode(), ESCALATED.getCode(), READ.getCode());
+    }
+
+    public static List<HealthWarningStatus> getPendingStatuses() {
+        return Arrays.asList(PENDING, REOPENED, ESCALATED, READ);
+    }
+
+    public boolean isPending() {
+        return this == PENDING || this == REOPENED || this == ESCALATED || this == READ;
+    }
+
+    public boolean isClosed() {
+        return this == HANDLED || this == IGNORED;
+    }
 }

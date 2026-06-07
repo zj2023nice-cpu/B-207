@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smart.elderly.entity.HealthWarningRecord;
 import com.smart.elderly.entity.Notification;
 import com.smart.elderly.entity.NotificationSubscription;
+import com.smart.elderly.enums.NotificationType;
 import com.smart.elderly.mapper.ElderlyFollowMapper;
 import com.smart.elderly.mapper.NotificationMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,7 +124,7 @@ public class NotificationService extends ServiceImpl<NotificationMapper, Notific
         notification.setWarningRecordId(warningRecord.getId());
         notification.setTitle("健康预警通知");
         notification.setContent(warningRecord.getWarningMessage());
-        notification.setNotificationType("HEALTH_WARNING");
+        notification.setNotificationType(NotificationType.HEALTH_WARNING.getCode());
         notification.setCreatedAt(LocalDateTime.now());
 
         this.save(notification);

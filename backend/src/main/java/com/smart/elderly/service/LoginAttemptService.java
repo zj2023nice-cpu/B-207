@@ -1,5 +1,6 @@
 package com.smart.elderly.service;
 
+import com.smart.elderly.statemachine.LoginSecurityRules;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -9,58 +10,54 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class LoginAttemptService {
 
-    private static final String LOGIN_ATTEMPT_PREFIX = "login:attempt:";
-    private static final String LOGIN_LOCK_PREFIX = "login:lock:";
-    private static final int MAX_ATTEMPTS = 3;
-    private static final int CAPTCHA_THRESHOLD = 2;
-    private static final long LOCK_DURATION_MINUTES = 15;
-    private static final long ATTEMPT_EXPIRE_MINUTES = 30;
-
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+    @Autowired
+    private LoginSecurityRules securityRules;
+
     public void recordFailedAttempt(String username) {
-        String key = LOGIN_ATTEMPT_PREFIX + username;
+        String key = securityRules.buildAttemptKey(username);
         Long attempts = stringRedisTemplate.opsForValue().increment(key);
         if (attempts != null && attempts == 1) {
-            stringRedisTemplate.expire(key, ATTEMPT_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            stringRedisTemplate.expire(key, securityRules.getAttemptExpireMinutes(), TimeUnit.MINUTES);
         }
-        if (attempts != null && attempts >= MAX_ATTEMPTS) {
+        if (attempts != null && securityRules.shouldLock(attempts.intValue())) {
             lockUser(username);
         }
     }
 
     public void resetAttempts(String username) {
-        stringRedisTemplate.delete(LOGIN_ATTEMPT_PREFIX + username);
-        stringRedisTemplate.delete(LOGIN_LOCK_PREFIX + username);
+        stringRedisTemplate.delete(securityRules.buildAttemptKey(username));
+        stringRedisTemplate.delete(securityRules.buildLockKey(username));
     }
 
     public boolean isLocked(String username) {
-        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(LOGIN_LOCK_PREFIX + username));
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(securityRules.buildLockKey(username)));
     }
 
     public boolean requiresCaptcha(String username) {
-        String key = LOGIN_ATTEMPT_PREFIX + username;
+        String key = securityRules.buildAttemptKey(username);
         String attemptsStr = stringRedisTemplate.opsForValue().get(key);
         if (attemptsStr == null) {
             return false;
         }
         int attempts = Integer.parseInt(attemptsStr);
-        return attempts >= CAPTCHA_THRESHOLD;
+        return securityRules.requiresCaptcha(attempts);
     }
 
     private void lockUser(String username) {
-        String key = LOGIN_LOCK_PREFIX + username;
-        stringRedisTemplate.opsForValue().set(key, "locked", LOCK_DURATION_MINUTES, TimeUnit.MINUTES);
+        String key = securityRules.buildLockKey(username);
+        stringRedisTemplate.opsForValue().set(key, "locked", securityRules.getLockDurationMinutes(), TimeUnit.MINUTES);
     }
 
     public int getRemainingAttempts(String username) {
-        String key = LOGIN_ATTEMPT_PREFIX + username;
+        String key = securityRules.buildAttemptKey(username);
         String attemptsStr = stringRedisTemplate.opsForValue().get(key);
         if (attemptsStr == null) {
-            return MAX_ATTEMPTS;
+            return securityRules.getMaxAttempts();
         }
         int attempts = Integer.parseInt(attemptsStr);
-        return Math.max(0, MAX_ATTEMPTS - attempts);
+        return securityRules.getRemainingAttempts(attempts);
     }
 }

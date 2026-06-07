@@ -41,7 +41,7 @@ public class HealthWarningRecordService extends ServiceImpl<HealthWarningRecordM
     }
 
     public List<HealthWarningRecord> getPending() {
-        return baseMapper.findByStatusWithElderlyName("PENDING");
+        return baseMapper.findByStatusWithElderlyName(HealthWarningStatus.PENDING.getCode());
     }
 
     public long countPending() {

@@ -2,6 +2,7 @@ package com.smart.elderly.controller;
 
 import com.smart.elderly.annotation.OperationLog;
 import com.smart.elderly.common.Result;
+import com.smart.elderly.common.SecurityConstants;
 import com.smart.elderly.dto.ChangePasswordDTO;
 import com.smart.elderly.dto.LoginRequest;
 import com.smart.elderly.dto.UpdateProfileDTO;
@@ -23,7 +24,7 @@ import java.util.Map;
 @RequestMapping("/api/users")
 public class UserController {
 
-    private static final String SESSION_USER_KEY = "LOGIN_USER";
+    private static final String SESSION_USER_KEY = SecurityConstants.SESSION_USER_KEY;
 
     @Autowired
     private UserService userService;
@@ -70,7 +71,7 @@ public class UserController {
             
             HttpSession session = httpRequest.getSession(true);
             session.setAttribute(SESSION_USER_KEY, dbUser);
-            session.setMaxInactiveInterval(3600 * 24);
+            session.setMaxInactiveInterval(SecurityConstants.DEFAULT_SESSION_TIMEOUT_SECONDS);
 
             userSessionService.recordLoginSession(dbUser, httpRequest);
 

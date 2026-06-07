@@ -3,6 +3,7 @@ package com.smart.elderly.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smart.elderly.entity.NotificationPreference;
+import com.smart.elderly.enums.NotificationType;
 import com.smart.elderly.mapper.NotificationPreferenceMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +16,7 @@ import java.util.List;
 @Service
 public class NotificationPreferenceService extends ServiceImpl<NotificationPreferenceMapper, NotificationPreference> {
 
-    private static final List<String> DEFAULT_HIGH_PRIORITY_TYPES = Arrays.asList("HEALTH_WARNING");
+    private static final List<String> DEFAULT_HIGH_PRIORITY_TYPES = NotificationType.getDefaultHighPriorityTypes();
     private static final String DEFAULT_DND_START = "22:00";
     private static final String DEFAULT_DND_END = "08:00";
 

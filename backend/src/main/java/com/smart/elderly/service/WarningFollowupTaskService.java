@@ -9,6 +9,8 @@ import com.smart.elderly.entity.Elderly;
 import com.smart.elderly.entity.HealthWarningRecord;
 import com.smart.elderly.entity.Notification;
 import com.smart.elderly.entity.WarningFollowupTask;
+import com.smart.elderly.enums.NotificationType;
+import com.smart.elderly.enums.PriorityLevel;
 import com.smart.elderly.enums.WarningFollowupTaskStatus;
 import com.smart.elderly.mapper.ElderlyMapper;
 import com.smart.elderly.mapper.HealthWarningRecordMapper;
@@ -58,7 +60,7 @@ public class WarningFollowupTaskService extends ServiceImpl<WarningFollowupTaskM
         task.setAssigneeId(dto.getAssigneeId());
         task.setAssigneeName(dto.getAssigneeName());
         task.setDeadline(dto.getDeadline());
-        task.setPriority(dto.getPriority() != null ? dto.getPriority() : "MEDIUM");
+        task.setPriority(dto.getPriority() != null ? dto.getPriority() : PriorityLevel.MEDIUM.getCode());
         task.setStatus(WarningFollowupTaskStatus.PENDING.getCode());
         task.setCreatedBy(UserContextHolder.getUserId());
         task.setReminder24hSent(false);
@@ -74,7 +76,7 @@ public class WarningFollowupTaskService extends ServiceImpl<WarningFollowupTaskM
             notification.setWarningRecordId(task.getWarningRecordId());
             notification.setTitle("新的跟进任务分配");
             notification.setContent("您有一个新的跟进任务：" + task.getTitle() + "，截止时间：" + task.getDeadline());
-            notification.setNotificationType("FOLLOWUP_TASK");
+            notification.setNotificationType(NotificationType.FOLLOWUP_TASK.getCode());
             notification.setCreatedAt(LocalDateTime.now());
             notificationService.save(notification);
         }
@@ -194,7 +196,7 @@ public class WarningFollowupTaskService extends ServiceImpl<WarningFollowupTaskM
         notification.setWarningRecordId(task.getWarningRecordId());
         notification.setTitle(title);
         notification.setContent(content);
-        notification.setNotificationType("FOLLOWUP_TASK_REMINDER");
+        notification.setNotificationType(NotificationType.FOLLOWUP_TASK_REMINDER.getCode());
         notification.setCreatedAt(LocalDateTime.now());
         notificationService.save(notification);
     }

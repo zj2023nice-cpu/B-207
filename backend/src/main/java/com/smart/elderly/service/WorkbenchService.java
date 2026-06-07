@@ -1,6 +1,7 @@
 package com.smart.elderly.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.smart.elderly.common.WorkbenchConstants;
 import com.smart.elderly.context.UserContextHolder;
 import com.smart.elderly.dto.WorkbenchQueryDTO;
 import com.smart.elderly.entity.Elderly;
@@ -8,6 +9,8 @@ import com.smart.elderly.entity.HealthRecord;
 import com.smart.elderly.entity.HealthWarningRecord;
 import com.smart.elderly.entity.Notification;
 import com.smart.elderly.entity.WarningFollowupTask;
+import com.smart.elderly.enums.NotificationStatus;
+import com.smart.elderly.enums.PriorityLevel;
 import com.smart.elderly.enums.WarningFollowupTaskStatus;
 import com.smart.elderly.enums.HealthWarningStatus;
 import com.smart.elderly.mapper.ElderlyMapper;
@@ -35,24 +38,24 @@ import java.util.stream.Collectors;
 @Service
 public class WorkbenchService {
 
-    private static final String ITEM_TYPE_WARNING = "WARNING";
-    private static final String ITEM_TYPE_NOTIFICATION = "NOTIFICATION";
-    private static final String ITEM_TYPE_HEALTH_RECORD = "HEALTH_RECORD";
-    private static final String ITEM_TYPE_FOLLOWUP_TASK = "FOLLOWUP_TASK";
+    private static final String ITEM_TYPE_WARNING = WorkbenchConstants.ITEM_TYPE_WARNING;
+    private static final String ITEM_TYPE_NOTIFICATION = WorkbenchConstants.ITEM_TYPE_NOTIFICATION;
+    private static final String ITEM_TYPE_HEALTH_RECORD = WorkbenchConstants.ITEM_TYPE_HEALTH_RECORD;
+    private static final String ITEM_TYPE_FOLLOWUP_TASK = WorkbenchConstants.ITEM_TYPE_FOLLOWUP_TASK;
 
-    private static final int SCORE_TYPE_FOLLOWUP_TASK = 90;
+    private static final int SCORE_TYPE_FOLLOWUP_TASK = WorkbenchConstants.SCORE_TYPE_FOLLOWUP_TASK;
 
-    private static final String PRIORITY_HIGH = "HIGH";
-    private static final String PRIORITY_MEDIUM = "MEDIUM";
-    private static final String PRIORITY_LOW = "LOW";
+    private static final String PRIORITY_HIGH = PriorityLevel.HIGH.getCode();
+    private static final String PRIORITY_MEDIUM = PriorityLevel.MEDIUM.getCode();
+    private static final String PRIORITY_LOW = PriorityLevel.LOW.getCode();
 
-    private static final int SCORE_TYPE_WARNING = 100;
-    private static final int SCORE_TYPE_NOTIFICATION = 70;
-    private static final int SCORE_TYPE_HEALTH_RECORD = 50;
+    private static final int SCORE_TYPE_WARNING = WorkbenchConstants.SCORE_TYPE_WARNING;
+    private static final int SCORE_TYPE_NOTIFICATION = WorkbenchConstants.SCORE_TYPE_NOTIFICATION;
+    private static final int SCORE_TYPE_HEALTH_RECORD = WorkbenchConstants.SCORE_TYPE_HEALTH_RECORD;
 
-    private static final int SCORE_LEVEL_HIGH = 3;
-    private static final int SCORE_LEVEL_MEDIUM = 2;
-    private static final int SCORE_LEVEL_LOW = 1;
+    private static final int SCORE_LEVEL_HIGH = WorkbenchConstants.SCORE_LEVEL_HIGH;
+    private static final int SCORE_LEVEL_MEDIUM = WorkbenchConstants.SCORE_LEVEL_MEDIUM;
+    private static final int SCORE_LEVEL_LOW = WorkbenchConstants.SCORE_LEVEL_LOW;
 
     @Autowired
     private HealthWarningRecordMapper warningRecordMapper;
@@ -240,7 +243,7 @@ public class WorkbenchService {
             item.setTitle(notification.getTitle());
             item.setDescription(notification.getContent());
             item.setStatus(notification.getStatus());
-            item.setStatusName("UNREAD".equalsIgnoreCase(notification.getStatus()) ? "未读" : (notification.getStatus() == null ? "未读" : notification.getStatus()));
+            item.setStatusName(NotificationStatus.fromCode(notification.getStatus()).getDisplayName());
             item.setCreatedAt(notification.getCreatedAt());
 
             boolean isHighPriority = Boolean.TRUE.equals(notification.getHighPriority());
@@ -444,26 +447,13 @@ public class WorkbenchService {
     }
 
     private String determinePriority(int totalScore) {
-        if (totalScore >= 120) {
-            return PRIORITY_HIGH;
-        }
-        if (totalScore >= 80) {
-            return PRIORITY_MEDIUM;
-        }
-        return PRIORITY_LOW;
+        return PriorityLevel.fromScore(totalScore, 
+            WorkbenchConstants.PRIORITY_HIGH_THRESHOLD, 
+            WorkbenchConstants.PRIORITY_MEDIUM_THRESHOLD).getCode();
     }
 
     private String getPriorityDisplayName(String priority) {
-        switch (priority) {
-            case PRIORITY_HIGH:
-                return "高";
-            case PRIORITY_MEDIUM:
-                return "中";
-            case PRIORITY_LOW:
-                return "低";
-            default:
-                return "未知";
-        }
+        return PriorityLevel.fromCode(priority).getDisplayName();
     }
 
     private String resolveWarningStatusName(String status) {
@@ -475,21 +465,21 @@ public class WorkbenchService {
         List<WorkbenchItemVO.QuickAction> actions = new ArrayList<WorkbenchItemVO.QuickAction>();
 
         WorkbenchItemVO.QuickAction openAction = new WorkbenchItemVO.QuickAction();
-        openAction.setActionKey("OPEN");
+        openAction.setActionKey(WorkbenchConstants.ACTION_OPEN);
         openAction.setActionName("查看/处理");
-        openAction.setActionType("PRIMARY");
+        openAction.setActionType(WorkbenchConstants.ACTION_TYPE_PRIMARY);
         openAction.setApiUrl("/warning?id=" + warning.getId());
-        openAction.setMethod("ROUTE");
+        openAction.setMethod(WorkbenchConstants.METHOD_ROUTE);
         openAction.setRequireConfirm(false);
         actions.add(openAction);
 
         if (HealthWarningStatus.PENDING.getCode().equals(warning.getStatus())) {
             WorkbenchItemVO.QuickAction readAction = new WorkbenchItemVO.QuickAction();
-            readAction.setActionKey("READ");
+            readAction.setActionKey(WorkbenchConstants.ACTION_READ);
             readAction.setActionName("标记已读");
-            readAction.setActionType("INFO");
+            readAction.setActionType(WorkbenchConstants.ACTION_TYPE_INFO);
             readAction.setApiUrl("/api/warning/record/read/" + warning.getId());
-            readAction.setMethod("PUT");
+            readAction.setMethod(WorkbenchConstants.METHOD_PUT);
             readAction.setRequireConfirm(false);
             actions.add(readAction);
         }
@@ -501,21 +491,22 @@ public class WorkbenchService {
         List<WorkbenchItemVO.QuickAction> actions = new ArrayList<WorkbenchItemVO.QuickAction>();
 
         WorkbenchItemVO.QuickAction openAction = new WorkbenchItemVO.QuickAction();
-        openAction.setActionKey("OPEN");
+        openAction.setActionKey(WorkbenchConstants.ACTION_OPEN);
         openAction.setActionName("打开通知");
-        openAction.setActionType("PRIMARY");
+        openAction.setActionType(WorkbenchConstants.ACTION_TYPE_PRIMARY);
         openAction.setApiUrl("/notification?id=" + notification.getId());
-        openAction.setMethod("ROUTE");
+        openAction.setMethod(WorkbenchConstants.METHOD_ROUTE);
         openAction.setRequireConfirm(false);
         actions.add(openAction);
 
-        if (!"READ".equalsIgnoreCase(notification.getStatus())) {
+        NotificationStatus status = NotificationStatus.fromCode(notification.getStatus());
+        if (status != NotificationStatus.READ) {
             WorkbenchItemVO.QuickAction readAction = new WorkbenchItemVO.QuickAction();
-            readAction.setActionKey("READ");
+            readAction.setActionKey(WorkbenchConstants.ACTION_READ);
             readAction.setActionName("标记已读");
-            readAction.setActionType("INFO");
+            readAction.setActionType(WorkbenchConstants.ACTION_TYPE_INFO);
             readAction.setApiUrl("/api/notification/read/" + notification.getId());
-            readAction.setMethod("PUT");
+            readAction.setMethod(WorkbenchConstants.METHOD_PUT);
             readAction.setRequireConfirm(false);
             actions.add(readAction);
         }
@@ -526,11 +517,11 @@ public class WorkbenchService {
     private List<WorkbenchItemVO.QuickAction> buildHealthRecordQuickActions(HealthRecord record) {
         List<WorkbenchItemVO.QuickAction> actions = new ArrayList<WorkbenchItemVO.QuickAction>();
         WorkbenchItemVO.QuickAction viewAction = new WorkbenchItemVO.QuickAction();
-        viewAction.setActionKey("VIEW");
+        viewAction.setActionKey(WorkbenchConstants.ACTION_VIEW);
         viewAction.setActionName("查看详情");
-        viewAction.setActionType("PRIMARY");
+        viewAction.setActionType(WorkbenchConstants.ACTION_TYPE_PRIMARY);
         viewAction.setApiUrl("/health?elderlyId=" + record.getElderlyId() + "&recordId=" + record.getId());
-        viewAction.setMethod("ROUTE");
+        viewAction.setMethod(WorkbenchConstants.METHOD_ROUTE);
         viewAction.setRequireConfirm(false);
         actions.add(viewAction);
         return actions;
@@ -623,19 +614,7 @@ public class WorkbenchService {
     }
 
     private int calculateFollowupTaskPriorityScore(WarningFollowupTask task) {
-        if (task.getPriority() == null) {
-            return SCORE_LEVEL_MEDIUM;
-        }
-        switch (task.getPriority().toUpperCase()) {
-            case "HIGH":
-                return SCORE_LEVEL_HIGH;
-            case "MEDIUM":
-                return SCORE_LEVEL_MEDIUM;
-            case "LOW":
-                return SCORE_LEVEL_LOW;
-            default:
-                return SCORE_LEVEL_MEDIUM;
-        }
+        return PriorityLevel.fromCode(task.getPriority()).getScore();
     }
 
     private int calculateFollowupTaskTimeScore(LocalDateTime deadline) {
@@ -665,21 +644,21 @@ public class WorkbenchService {
         List<WorkbenchItemVO.QuickAction> actions = new ArrayList<WorkbenchItemVO.QuickAction>();
 
         WorkbenchItemVO.QuickAction openAction = new WorkbenchItemVO.QuickAction();
-        openAction.setActionKey("OPEN");
+        openAction.setActionKey(WorkbenchConstants.ACTION_OPEN);
         openAction.setActionName("查看详情");
-        openAction.setActionType("PRIMARY");
+        openAction.setActionType(WorkbenchConstants.ACTION_TYPE_PRIMARY);
         openAction.setApiUrl("/warning/followup-task?id=" + task.getId());
-        openAction.setMethod("ROUTE");
+        openAction.setMethod(WorkbenchConstants.METHOD_ROUTE);
         openAction.setRequireConfirm(false);
         actions.add(openAction);
 
         if (WarningFollowupTaskStatus.PENDING.getCode().equals(task.getStatus())) {
             WorkbenchItemVO.QuickAction startAction = new WorkbenchItemVO.QuickAction();
-            startAction.setActionKey("START");
+            startAction.setActionKey(WorkbenchConstants.ACTION_START);
             startAction.setActionName("开始处理");
-            startAction.setActionType("WARNING");
+            startAction.setActionType(WorkbenchConstants.ACTION_TYPE_WARNING);
             startAction.setApiUrl("/api/warning/followup-task/start/" + task.getId());
-            startAction.setMethod("PUT");
+            startAction.setMethod(WorkbenchConstants.METHOD_PUT);
             startAction.setRequireConfirm(false);
             actions.add(startAction);
         }
@@ -688,11 +667,11 @@ public class WorkbenchService {
                 || WarningFollowupTaskStatus.IN_PROGRESS.getCode().equals(task.getStatus())
                 || WarningFollowupTaskStatus.OVERDUE.getCode().equals(task.getStatus())) {
             WorkbenchItemVO.QuickAction completeAction = new WorkbenchItemVO.QuickAction();
-            completeAction.setActionKey("COMPLETE");
+            completeAction.setActionKey(WorkbenchConstants.ACTION_COMPLETE);
             completeAction.setActionName("完成");
-            completeAction.setActionType("SUCCESS");
+            completeAction.setActionType(WorkbenchConstants.ACTION_TYPE_SUCCESS);
             completeAction.setApiUrl("/warning/followup-task?id=" + task.getId());
-            completeAction.setMethod("ROUTE");
+            completeAction.setMethod(WorkbenchConstants.METHOD_ROUTE);
             completeAction.setRequireConfirm(false);
             actions.add(completeAction);
         }

@@ -3,6 +3,7 @@ package com.smart.elderly.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smart.elderly.context.UserContextHolder;
 import com.smart.elderly.entity.*;
+import com.smart.elderly.enums.HealthWarningStatus;
 import com.smart.elderly.mapper.*;
 import com.smart.elderly.vo.SearchResultItemVO;
 import com.smart.elderly.vo.SearchResultVO;
@@ -152,7 +153,7 @@ public class SearchService {
 
     private List<SearchResultItemVO> searchWarnings(String keyword, Integer limit) {
         LambdaQueryWrapper<HealthWarningRecord> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(HealthWarningRecord::getStatus, Arrays.asList("PENDING", "REOPENED", "ESCALATED"))
+        wrapper.in(HealthWarningRecord::getStatus, HealthWarningStatus.getPendingStatusCodes())
                 .and(w -> w.like(HealthWarningRecord::getWarningMessage, keyword)
                         .or().like(HealthWarningRecord::getIndicatorType, keyword)
                         .or().like(HealthWarningRecord::getWarningLevel, keyword))

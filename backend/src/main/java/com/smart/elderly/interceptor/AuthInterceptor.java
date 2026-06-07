@@ -2,6 +2,7 @@ package com.smart.elderly.interceptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smart.elderly.common.Result;
+import com.smart.elderly.common.SecurityConstants;
 import com.smart.elderly.entity.User;
 import com.smart.elderly.service.UserSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import java.io.PrintWriter;
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
-    private static final String SESSION_USER_KEY = "LOGIN_USER";
+    private static final String SESSION_USER_KEY = SecurityConstants.SESSION_USER_KEY;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
