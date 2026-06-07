@@ -198,17 +198,20 @@ public class QualityReviewEngine {
 
     private String checkQuickDuplicate(HealthRecord record, Map<String, Object> config) {
         if (record.getElderlyId() == null || record.getCheckTime() == null) return null;
-        if (record.getId() != null) return null;
 
         int timeWindowMinutes = getIntConfig(config, "timeWindowMinutes", 5);
         LocalDateTime startTime = record.getCheckTime().minusMinutes(timeWindowMinutes);
         LocalDateTime endTime = record.getCheckTime().plusMinutes(timeWindowMinutes);
 
-        Long count = healthRecordMapper.selectCount(
-            new LambdaQueryWrapper<HealthRecord>()
-                .eq(HealthRecord::getElderlyId, record.getElderlyId())
-                .between(HealthRecord::getCheckTime, startTime, endTime)
-        );
+        LambdaQueryWrapper<HealthRecord> wrapper = new LambdaQueryWrapper<HealthRecord>()
+            .eq(HealthRecord::getElderlyId, record.getElderlyId())
+            .between(HealthRecord::getCheckTime, startTime, endTime);
+
+        if (record.getId() != null) {
+            wrapper.ne(HealthRecord::getId, record.getId());
+        }
+
+        Long count = healthRecordMapper.selectCount(wrapper);
 
         if (count != null && count > 0) {
             return "该老人在" + timeWindowMinutes + "分钟内已有健康记录，存在重复录入可能";

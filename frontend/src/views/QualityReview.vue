@@ -332,6 +332,9 @@ const openReviewDialog = (row) => {
 }
 
 const submitReview = async () => {
+  reviewForm.value.reviewConclusion = reviewForm.value.reviewConclusion?.trim?.() || ''
+  reviewForm.value.ignoreReason = reviewForm.value.ignoreReason?.trim?.() || ''
+
   if (!reviewForm.value.reviewConclusion) {
     ElMessage.warning('请输入复核结论')
     return
@@ -340,7 +343,7 @@ const submitReview = async () => {
     ElMessage.warning('请输入忽略原因')
     return
   }
-  
+
   submitting.value = true
   try {
     await request.post('/quality-review/submit', reviewForm.value)

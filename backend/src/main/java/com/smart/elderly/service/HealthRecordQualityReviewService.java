@@ -38,22 +38,34 @@ public class HealthRecordQualityReviewService extends ServiceImpl<HealthRecordQu
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Transactional
-    public void processHealthRecordQuality(HealthRecord record) {
-        QualityReviewResult result = reviewEngine.analyze(record);
-        
+    public QualityReviewResult analyzeRecordQuality(HealthRecord record) {
+        return reviewEngine.analyze(record);
+    }
+
+    public void applyQualityReviewResult(HealthRecord record, QualityReviewResult result) {
         record.setQualityScore(result.getQualityScore());
         record.setQualityIssues(toJson(result.getIssues()));
-        
-        if (result.isSuspicious()) {
-            record.setQualityStatus(QualityStatus.SUSPICIOUS.getCode());
-            createReview(record, result);
-        } else {
-            record.setQualityStatus(QualityStatus.NORMAL.getCode());
+        record.setQualityStatus(result.isSuspicious()
+                ? QualityStatus.SUSPICIOUS.getCode()
+                : QualityStatus.NORMAL.getCode());
+    }
+
+    @Transactional
+    public void createReviewIfNeeded(HealthRecord record, QualityReviewResult result) {
+        if (record == null || record.getId() == null || result == null || !result.isSuspicious()) {
+            return;
         }
-        
+        createReview(record, result);
+    }
+
+    @Transactional
+    public void processHealthRecordQuality(HealthRecord record) {
+        QualityReviewResult result = analyzeRecordQuality(record);
+        applyQualityReviewResult(record, result);
+
         if (record.getId() != null) {
             healthRecordMapper.updateById(record);
+            createReviewIfNeeded(record, result);
         }
     }
 
@@ -98,10 +110,27 @@ public class HealthRecordQualityReviewService extends ServiceImpl<HealthRecordQu
         if (review == null) {
             throw new IllegalArgumentException("复核记录不存在");
         }
+        if (!ReviewStatus.PENDING.getCode().equals(review.getReviewStatus())) {
+            throw new IllegalArgumentException("当前复核记录已处理，不能重复提交");
+        }
 
-        review.setReviewStatus(dto.getReviewStatus());
-        review.setReviewConclusion(dto.getReviewConclusion());
-        review.setIgnoreReason(dto.getIgnoreReason());
+        ReviewStatus targetStatus = ReviewStatus.requireValidCode(dto.getReviewStatus().trim());
+        String reviewConclusion = trimToNull(dto.getReviewConclusion());
+        if (reviewConclusion == null) {
+            throw new IllegalArgumentException("复核结论不能为空");
+        }
+
+        String ignoreReason = trimToNull(dto.getIgnoreReason());
+        if (targetStatus == ReviewStatus.IGNORED && ignoreReason == null) {
+            throw new IllegalArgumentException("忽略时必须填写原因");
+        }
+        if (targetStatus != ReviewStatus.IGNORED) {
+            ignoreReason = null;
+        }
+
+        review.setReviewStatus(targetStatus.getCode());
+        review.setReviewConclusion(reviewConclusion);
+        review.setIgnoreReason(ignoreReason);
         review.setReviewerId(UserContextHolder.getUserId());
         review.setReviewerName(UserContextHolder.getUsername() != null ? UserContextHolder.getUsername() : "系统");
         review.setReviewTime(LocalDateTime.now());
@@ -110,7 +139,7 @@ public class HealthRecordQualityReviewService extends ServiceImpl<HealthRecordQu
 
         HealthRecord record = healthRecordMapper.selectById(review.getHealthRecordId());
         if (record != null) {
-            String recordStatus = ReviewStatus.IGNORED.getCode().equals(dto.getReviewStatus())
+            String recordStatus = targetStatus == ReviewStatus.IGNORED
                     ? QualityStatus.IGNORED.getCode()
                     : QualityStatus.REVIEWED.getCode();
             record.setQualityStatus(recordStatus);
@@ -118,38 +147,46 @@ public class HealthRecordQualityReviewService extends ServiceImpl<HealthRecordQu
         }
     }
 
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     public Map<String, Long> getReviewStats() {
-        Map<String, Long> stats = new HashMap<>();
+        Map<String, Long> stats = new HashMap<String, Long>();
         stats.put("pending", reviewMapper.countPendingReviews());
         stats.put("total", reviewMapper.selectCount(null));
-        
+
         long approved = reviewMapper.selectCount(
-            new LambdaQueryWrapper<HealthRecordQualityReview>()
-                .eq(HealthRecordQualityReview::getReviewStatus, ReviewStatus.APPROVED.getCode())
+                new LambdaQueryWrapper<HealthRecordQualityReview>()
+                        .eq(HealthRecordQualityReview::getReviewStatus, ReviewStatus.APPROVED.getCode())
         );
         stats.put("approved", approved);
-        
+
         long corrected = reviewMapper.selectCount(
-            new LambdaQueryWrapper<HealthRecordQualityReview>()
-                .eq(HealthRecordQualityReview::getReviewStatus, ReviewStatus.CORRECTED.getCode())
+                new LambdaQueryWrapper<HealthRecordQualityReview>()
+                        .eq(HealthRecordQualityReview::getReviewStatus, ReviewStatus.CORRECTED.getCode())
         );
         stats.put("corrected", corrected);
-        
+
         long ignored = reviewMapper.selectCount(
-            new LambdaQueryWrapper<HealthRecordQualityReview>()
-                .eq(HealthRecordQualityReview::getReviewStatus, ReviewStatus.IGNORED.getCode())
+                new LambdaQueryWrapper<HealthRecordQualityReview>()
+                        .eq(HealthRecordQualityReview::getReviewStatus, ReviewStatus.IGNORED.getCode())
         );
         stats.put("ignored", ignored);
-        
+
         return stats;
     }
 
     public HealthRecordQualityReview getByHealthRecordId(Integer healthRecordId) {
         return reviewMapper.selectOne(
-            new LambdaQueryWrapper<HealthRecordQualityReview>()
-                .eq(HealthRecordQualityReview::getHealthRecordId, healthRecordId)
-                .orderByDesc(HealthRecordQualityReview::getCreatedAt)
-                .last("LIMIT 1")
+                new LambdaQueryWrapper<HealthRecordQualityReview>()
+                        .eq(HealthRecordQualityReview::getHealthRecordId, healthRecordId)
+                        .orderByDesc(HealthRecordQualityReview::getCreatedAt)
+                        .last("LIMIT 1")
         );
     }
 }

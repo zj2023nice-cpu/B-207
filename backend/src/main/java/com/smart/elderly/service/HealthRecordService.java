@@ -195,8 +195,11 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
             record.setAbnormalReason(String.join("; ", abnormalReasons));
         }
 
+        com.smart.elderly.dto.QualityReviewResult qualityReviewResult = qualityReviewService.analyzeRecordQuality(record);
+        qualityReviewService.applyQualityReviewResult(record, qualityReviewResult);
+
         boolean saved = this.save(record);
-        
+
         if (saved) {
             if (!pendingWarnings.isEmpty()) {
                 for (WarningInfo info : pendingWarnings) {
@@ -211,10 +214,10 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     );
                 }
             }
-            
-            qualityReviewService.processHealthRecordQuality(record);
+
+            qualityReviewService.createReviewIfNeeded(record, qualityReviewResult);
         }
-        
+
         return saved;
     }
 

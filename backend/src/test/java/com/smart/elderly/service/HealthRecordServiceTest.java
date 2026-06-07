@@ -37,6 +37,9 @@ public class HealthRecordServiceTest {
     @Mock
     private HealthWarningRecordService warningRecordService;
 
+    @Mock
+    private HealthRecordQualityReviewService qualityReviewService;
+
     @InjectMocks
     private HealthRecordService healthRecordService;
 
