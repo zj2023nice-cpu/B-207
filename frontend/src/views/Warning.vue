@@ -288,7 +288,8 @@ const actionTitles = {
   HANDLED: '处理',
   IGNORED: '忽略',
   ESCALATED: '升级处理',
-  REOPENED: '重新打开'
+  REOPENED: '重新打开',
+  PENDING: '重置为待处理'
 }
 
 const actionNames = {
@@ -339,6 +340,19 @@ const getActionButtonType = (status) => {
     PENDING: 'primary'
   }
   return map[status] || 'primary'
+}
+
+const getTimelineActionColor = (actionType) => {
+  const map = {
+    CREATE: '#409EFF',
+    READ: '#E6A23C',
+    HANDLE: '#67C23A',
+    IGNORE: '#909399',
+    REOPEN: '#F56C6C',
+    ESCALATE: '#E6A23C',
+    UPDATE: '#409EFF'
+  }
+  return map[actionType] || '#409EFF'
 }
 
 const getTimelineType = (actionType) => {
@@ -416,28 +430,28 @@ const submitAction = async () => {
     return
   }
   
-  const actionMap = {
-    HANDLED: 'handle',
-    IGNORED: 'ignore',
-    ESCALATED: 'escalate',
-    REOPENED: 'reopen'
-  }
-  
-  const actionPath = actionMap[currentAction.value]
-  if (!actionPath) {
-    ElMessage.error('未知操作')
+  const warningId = currentWarning.value?.id || detailData.value?.id
+  if (!warningId) {
+    ElMessage.error('无法获取预警ID')
     return
   }
   
-  await request.put(`/warning/record/${actionPath}/${currentWarning.value.id}`, {
-    operator: actionForm.value.operator,
-    handledBy: actionForm.value.operator,
-    remark: actionForm.value.remark
-  })
-  
-  ElMessage.success('操作成功')
-  actionDialogVisible.value = false
-  loadWarnings()
+  try {
+    await request.put(`/warning/record/transition/${warningId}`, {
+      targetStatus: currentAction.value,
+      operator: actionForm.value.operator,
+      remark: actionForm.value.remark
+    })
+    
+    ElMessage.success('操作成功')
+    actionDialogVisible.value = false
+    loadWarnings()
+    if (detailData.value && detailData.value.id === warningId) {
+      showDetailDialog({ id: warningId })
+    }
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '操作失败')
+  }
 }
 
 const showDetailDialog = async (row) => {

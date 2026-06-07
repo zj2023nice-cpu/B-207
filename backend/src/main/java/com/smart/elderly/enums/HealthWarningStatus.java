@@ -37,6 +37,30 @@ public enum HealthWarningStatus {
         return PENDING;
     }
 
+    public static boolean isValidCode(String code) {
+        if (code == null) {
+            return false;
+        }
+        for (HealthWarningStatus status : values()) {
+            if (status.code.equals(code)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static HealthWarningStatus requireValidCode(String code) {
+        if (code == null) {
+            throw new IllegalArgumentException("状态码不能为空");
+        }
+        for (HealthWarningStatus status : values()) {
+            if (status.code.equals(code)) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("未知的状态码: " + code);
+    }
+
     public List<HealthWarningStatus> getAllowedTransitions() {
         switch (this) {
             case PENDING:

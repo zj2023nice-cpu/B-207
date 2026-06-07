@@ -33,11 +33,12 @@ public class HealthWarningRecordController {
         if (id == null) {
             return Result.error("ID不能为空");
         }
-        HealthWarningDetailVO detail = warningRecordService.getDetailById(id);
-        if (detail == null) {
-            return Result.error("记录不存在");
+        try {
+            HealthWarningDetailVO detail = warningRecordService.getDetailById(id);
+            return Result.success(detail);
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
         }
-        return Result.success(detail);
     }
 
     @GetMapping("/elderly/{elderlyId}")
@@ -79,12 +80,8 @@ public class HealthWarningRecordController {
             return Result.error("ID不能为空");
         }
         try {
-            boolean success = warningRecordService.markAsRead(id);
-            if (success) {
-                return Result.success("已标记为已读");
-            } else {
-                return Result.error("操作失败");
-            }
+            warningRecordService.markAsRead(id);
+            return Result.success("已标记为已读");
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }
@@ -100,12 +97,8 @@ public class HealthWarningRecordController {
         String remark = params.get("remark");
         
         try {
-            boolean success = warningRecordService.handleWarning(id, handledBy, remark);
-            if (success) {
-                return Result.success("处理成功");
-            } else {
-                return Result.error("处理失败");
-            }
+            warningRecordService.handleWarning(id, handledBy, remark);
+            return Result.success("处理成功");
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }
@@ -121,12 +114,8 @@ public class HealthWarningRecordController {
         String remark = params.get("remark");
         
         try {
-            boolean success = warningRecordService.ignoreWarning(id, operator, remark);
-            if (success) {
-                return Result.success("已忽略该预警");
-            } else {
-                return Result.error("操作失败");
-            }
+            warningRecordService.ignoreWarning(id, operator, remark);
+            return Result.success("已忽略该预警");
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }
@@ -142,12 +131,8 @@ public class HealthWarningRecordController {
         String remark = params.get("remark");
         
         try {
-            boolean success = warningRecordService.reopenWarning(id, operator, remark);
-            if (success) {
-                return Result.success("已重新打开");
-            } else {
-                return Result.error("操作失败");
-            }
+            warningRecordService.reopenWarning(id, operator, remark);
+            return Result.success("已重新打开");
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }
@@ -163,12 +148,8 @@ public class HealthWarningRecordController {
         String remark = params.get("remark");
         
         try {
-            boolean success = warningRecordService.escalateWarning(id, operator, remark);
-            if (success) {
-                return Result.success("已升级处理");
-            } else {
-                return Result.error("操作失败");
-            }
+            warningRecordService.escalateWarning(id, operator, remark);
+            return Result.success("已升级处理");
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }
@@ -180,12 +161,12 @@ public class HealthWarningRecordController {
         if (id == null) {
             return Result.error("ID不能为空");
         }
-        if (vo.getTargetStatus() == null) {
+        if (vo.getTargetStatus() == null || vo.getTargetStatus().trim().isEmpty()) {
             return Result.error("目标状态不能为空");
         }
         
         try {
-            HealthWarningStatus targetStatus = HealthWarningStatus.fromCode(vo.getTargetStatus());
+            HealthWarningStatus targetStatus = HealthWarningStatus.requireValidCode(vo.getTargetStatus());
             boolean success = warningRecordService.transitionStatus(
                 id, targetStatus, vo.getOperator(), vo.getRemark()
             );

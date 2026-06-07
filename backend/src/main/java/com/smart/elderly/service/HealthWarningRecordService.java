@@ -49,12 +49,21 @@ public class HealthWarningRecordService extends ServiceImpl<HealthWarningRecordM
     }
 
     public HealthWarningDetailVO getDetailById(Integer id) {
+        if (id == null) {
+            throw new IllegalArgumentException("预警记录ID不能为空");
+        }
         HealthWarningRecord record = this.getById(id);
         if (record == null) {
-            return null;
+            throw new IllegalArgumentException("预警记录不存在，ID: " + id);
         }
         
-        HealthWarningStatus currentStatus = HealthWarningStatus.fromCode(record.getStatus());
+        HealthWarningStatus currentStatus;
+        try {
+            currentStatus = HealthWarningStatus.requireValidCode(record.getStatus());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("预警记录状态异常：" + e.getMessage());
+        }
+        
         List<HealthWarningTimeline> timeline = timelineMapper.findByWarningRecordId(id);
         
         HealthWarningDetailVO vo = new HealthWarningDetailVO();
@@ -140,17 +149,37 @@ public class HealthWarningRecordService extends ServiceImpl<HealthWarningRecordM
     @Transactional
     public boolean transitionStatus(Integer id, HealthWarningStatus targetStatus, 
                                      String operator, String remark) {
-        HealthWarningRecord record = this.getById(id);
-        if (record == null) {
-            return false;
+        if (id == null) {
+            throw new IllegalArgumentException("预警记录ID不能为空");
+        }
+        if (targetStatus == null) {
+            throw new IllegalArgumentException("目标状态不能为空");
+        }
+        if (targetStatus != HealthWarningStatus.READ && 
+            (operator == null || operator.trim().isEmpty())) {
+            throw new IllegalArgumentException("操作人不能为空");
         }
         
-        HealthWarningStatus currentStatus = HealthWarningStatus.fromCode(record.getStatus());
+        HealthWarningRecord record = this.getById(id);
+        if (record == null) {
+            throw new IllegalArgumentException("预警记录不存在，ID: " + id);
+        }
+        
+        HealthWarningStatus currentStatus = HealthWarningStatus.requireValidCode(record.getStatus());
+        
+        if (currentStatus == targetStatus) {
+            return true;
+        }
         
         if (!currentStatus.canTransitionTo(targetStatus)) {
             throw new IllegalArgumentException(
-                String.format("非法状态切换：无法从 %s 切换到 %s", 
-                    currentStatus.getDisplayName(), targetStatus.getDisplayName())
+                String.format("非法状态切换：无法从 %s 切换到 %s。允许的目标状态：%s", 
+                    currentStatus.getDisplayName(), 
+                    targetStatus.getDisplayName(),
+                    currentStatus.getAllowedTransitions().stream()
+                        .map(HealthWarningStatus::getDisplayName)
+                        .collect(Collectors.joining(", "))
+                )
             );
         }
         
