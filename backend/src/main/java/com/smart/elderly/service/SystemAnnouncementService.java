@@ -105,6 +105,15 @@ public class SystemAnnouncementService extends ServiceImpl<SystemAnnouncementMap
     }
 
     @Transactional
+    public boolean markAsReadAndCheck(Integer announcementId, Integer userId) {
+        boolean hasRead = readRecordService.hasRead(announcementId, userId);
+        if (!hasRead) {
+            readRecordService.markAsRead(announcementId, userId);
+        }
+        return true;
+    }
+
+    @Transactional
     public void markAllAsRead(Integer userId) {
         List<SystemAnnouncement> active = getActiveAnnouncements();
         for (SystemAnnouncement announcement : active) {

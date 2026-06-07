@@ -94,12 +94,19 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-    const user = localStorage.getItem('user')
-    if (to.path !== '/login' && !user) {
+    const userStr = localStorage.getItem('user')
+    if (to.path !== '/login' && !userStr) {
         next('/login')
-    } else {
-        next()
+        return
     }
+    if (to.path.startsWith('/system-announcement-admin')) {
+        const user = JSON.parse(userStr)
+        if (!user.role || user.role.toLowerCase() !== 'admin') {
+            next('/system-announcement')
+            return
+        }
+    }
+    next()
 })
 
 export default router

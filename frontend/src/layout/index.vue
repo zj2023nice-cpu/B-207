@@ -43,7 +43,7 @@
               <span>系统公告</span>
             </el-badge>
           </el-menu-item>
-          <el-menu-item index="/system-announcement-admin">
+          <el-menu-item v-if="isAdmin" index="/system-announcement-admin">
             <el-icon><EditPen /></el-icon>
             <span>公告管理</span>
           </el-menu-item>
@@ -101,6 +101,7 @@ import request from '../utils/request'
 
 const router = useRouter()
 const username = ref('管理员')
+const isAdmin = ref(false)
 const unreadCount = ref(0)
 const announcementUnreadCount = ref(0)
 let timer = null
@@ -132,6 +133,7 @@ onMounted(() => {
   if (userStr) {
     const user = JSON.parse(userStr)
     username.value = user.username
+    isAdmin.value = user.role && user.role.toLowerCase() === 'admin'
   }
   
   loadUnreadCount()

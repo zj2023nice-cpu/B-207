@@ -22,6 +22,16 @@ public class UserContextHolder {
         return userInfo != null ? userInfo.getUsername() : null;
     }
 
+    public static String getRole() {
+        UserInfo userInfo = USER_INFO_THREAD_LOCAL.get();
+        return userInfo != null ? userInfo.getRole() : null;
+    }
+
+    public static boolean isAdmin() {
+        String role = getRole();
+        return "admin".equalsIgnoreCase(role);
+    }
+
     public static void clear() {
         USER_INFO_THREAD_LOCAL.remove();
     }
@@ -29,10 +39,12 @@ public class UserContextHolder {
     public static class UserInfo {
         private Integer userId;
         private String username;
+        private String role;
 
-        public UserInfo(Integer userId, String username) {
+        public UserInfo(Integer userId, String username, String role) {
             this.userId = userId;
             this.username = username;
+            this.role = role;
         }
 
         public Integer getUserId() {
@@ -49,6 +61,14 @@ public class UserContextHolder {
 
         public void setUsername(String username) {
             this.username = username;
+        }
+
+        public String getRole() {
+            return role;
+        }
+
+        public void setRole(String role) {
+            this.role = role;
         }
     }
 }
