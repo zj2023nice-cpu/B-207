@@ -3,7 +3,18 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>通知消息</span>
+          <div class="header-left">
+            <span>通知消息</span>
+            <el-tag 
+              :type="subscriptionEnabled ? 'success' : 'info'" 
+              size="small" 
+              class="subscription-tag"
+              @click="goToSubscription"
+              style="cursor: pointer;"
+            >
+              {{ subscriptionEnabled ? '订阅规则已生效' : '订阅规则未启用' }}
+            </el-tag>
+          </div>
           <div class="header-actions">
             <el-badge :value="unreadCount" class="item" style="margin-right: 15px;">
               <span>未读消息</span>
@@ -18,6 +29,20 @@
           </div>
         </div>
       </template>
+      
+      <div class="subscription-info" v-if="subscriptionEnabled">
+        <el-alert 
+          :title="subscriptionInfoText" 
+          type="success" 
+          :closable="false"
+          show-icon
+          style="margin-bottom: 15px;"
+        >
+          <template #default>
+            <span>订阅规则已生效，点击 <el-link type="primary" @click="goToSubscription">这里</el-link> 可修改配置</span>
+          </template>
+        </el-alert>
+      </div>
       
       <div class="notification-list">
         <div 
@@ -51,21 +76,53 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
 const notificationList = ref([])
 const unreadCount = ref(0)
+const subscriptionEnabled = ref(false)
+const subscription = ref(null)
+
+const userId = computed(() => {
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    const user = JSON.parse(userStr)
+    return user.id
+  }
+  return null
+})
+
+const subscriptionInfoText = computed(() => {
+  if (!subscription.value) return '订阅规则已启用'
+  const parts = []
+  if (subscription.value.notificationTypes) {
+    parts.push(`已选择消息类型`)
+  }
+  if (subscription.value.onlyAbnormal) {
+    parts.push('仅异常类消息')
+  }
+  if (subscription.value.onlyFollowedElderly) {
+    parts.push('仅关注老人')
+  }
+  return parts.length > 0 ? `当前过滤条件：${parts.join('、')}` : '订阅规则已启用'
+})
 
 const loadNotifications = async () => {
-  const res = await request.get('/notification/list')
+  if (!userId.value) return
+  const res = await request.get(`/notification/list/with-subscription/${userId.value}`)
   notificationList.value = res.data || []
 }
 
 const loadUnreadCount = async () => {
-  const res = await request.get('/notification/count')
+  if (!userId.value) return
+  const res = await request.get(`/notification/count/with-subscription/${userId.value}`)
   unreadCount.value = res.data?.unreadCount || 0
+  subscriptionEnabled.value = res.data?.subscriptionEnabled || false
+  subscription.value = res.data?.subscription
 }
 
 const handleRead = async (item) => {
@@ -85,6 +142,10 @@ const handleMarkAllRead = async () => {
   unreadCount.value = 0
 }
 
+const goToSubscription = () => {
+  router.push('/notification-subscription')
+}
+
 onMounted(() => {
   loadNotifications()
   loadUnreadCount()
@@ -101,6 +162,16 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-weight: bold;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.subscription-tag {
+  margin-left: 10px;
 }
 
 .header-actions {

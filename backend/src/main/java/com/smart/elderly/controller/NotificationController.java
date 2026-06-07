@@ -31,6 +31,30 @@ public class NotificationController {
         return Result.success(notificationService.countUnread());
     }
 
+    @GetMapping("/list/with-subscription/{userId}")
+    public Result<List<Notification>> listWithSubscription(@PathVariable Integer userId) {
+        if (userId == null) {
+            return Result.error("用户ID不能为空");
+        }
+        return Result.success(notificationService.getAllWithSubscription(userId));
+    }
+
+    @GetMapping("/unread/with-subscription/{userId}")
+    public Result<List<Notification>> getUnreadWithSubscription(@PathVariable Integer userId) {
+        if (userId == null) {
+            return Result.error("用户ID不能为空");
+        }
+        return Result.success(notificationService.getAllUnreadWithSubscription(userId));
+    }
+
+    @GetMapping("/count/with-subscription/{userId}")
+    public Result<Map<String, Object>> countUnreadWithSubscription(@PathVariable Integer userId) {
+        if (userId == null) {
+            return Result.error("用户ID不能为空");
+        }
+        return Result.success(notificationService.countUnreadWithSubscription(userId));
+    }
+
     @GetMapping("/elderly/{elderlyId}")
     public Result<List<Notification>> getByElderlyId(@PathVariable Integer elderlyId) {
         if (elderlyId == null) {

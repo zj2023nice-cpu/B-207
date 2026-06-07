@@ -49,6 +49,12 @@ const routes = [
                 meta: { title: '通知消息' }
             },
             {
+                path: 'notification-subscription',
+                name: 'NotificationSubscription',
+                component: () => import('../views/NotificationSubscription.vue'),
+                meta: { title: '订阅规则' }
+            },
+            {
                 path: 'elderly-tag',
                 name: 'ElderlyTag',
                 component: () => import('../views/ElderlyTag.vue'),

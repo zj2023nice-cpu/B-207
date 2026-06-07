@@ -41,6 +41,10 @@
               <span>通知消息</span>
             </el-badge>
           </el-menu-item>
+          <el-menu-item index="/notification-subscription">
+            <el-icon><Setting /></el-icon>
+            <span>订阅规则</span>
+          </el-menu-item>
           <el-menu-item index="/system-announcement">
             <el-badge :value="announcementUnreadCount" :hidden="announcementUnreadCount === 0" class="notification-badge">
               <el-icon><Promotion /></el-icon>
@@ -99,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
 
@@ -110,10 +114,24 @@ const unreadCount = ref(0)
 const announcementUnreadCount = ref(0)
 let timer = null
 
+const currentUserId = computed(() => {
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    const user = JSON.parse(userStr)
+    return user.id
+  }
+  return null
+})
+
 const loadUnreadCount = async () => {
   try {
-    const res = await request.get('/notification/count')
-    unreadCount.value = res.data?.unreadCount || 0
+    if (currentUserId.value) {
+      const res = await request.get(`/notification/count/with-subscription/${currentUserId.value}`)
+      unreadCount.value = res.data?.unreadCount || 0
+    } else {
+      const res = await request.get('/notification/count')
+      unreadCount.value = res.data?.unreadCount || 0
+    }
   } catch {
     unreadCount.value = 0
   }
