@@ -28,6 +28,9 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
     @Autowired
     private HealthWarningRecordService warningRecordService;
 
+    @Autowired
+    private HealthRecordQualityReviewService qualityReviewService;
+
     @Transactional
     public boolean saveRecord(HealthRecord record) {
         if (record.getElderlyId() == null) {
@@ -194,18 +197,22 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
 
         boolean saved = this.save(record);
         
-        if (saved && !pendingWarnings.isEmpty()) {
-            for (WarningInfo info : pendingWarnings) {
-                warningRecordService.createWarning(
-                    info.elderlyId,
-                    record.getId(),
-                    info.indicatorType,
-                    info.actualValue,
-                    info.thresholdValue,
-                    info.warningLevel,
-                    info.warningMessage
-                );
+        if (saved) {
+            if (!pendingWarnings.isEmpty()) {
+                for (WarningInfo info : pendingWarnings) {
+                    warningRecordService.createWarning(
+                        info.elderlyId,
+                        record.getId(),
+                        info.indicatorType,
+                        info.actualValue,
+                        info.thresholdValue,
+                        info.warningLevel,
+                        info.warningMessage
+                    );
+                }
             }
+            
+            qualityReviewService.processHealthRecordQuality(record);
         }
         
         return saved;

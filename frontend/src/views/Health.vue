@@ -139,7 +139,30 @@
                 <el-tag v-else type="info" size="small">原始</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="180" fixed="right">
+            <el-table-column label="质量状态" width="110">
+              <template #default="scope">
+                <el-tag 
+                  :type="getQualityStatusType(scope.row.qualityStatus)" 
+                  size="small"
+                  @click="goToQualityReview(scope.row)"
+                  style="cursor: pointer;"
+                >
+                  {{ getQualityStatusText(scope.row.qualityStatus) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="质量评分" width="100">
+              <template #default="scope">
+                <el-progress 
+                  v-if="scope.row.qualityScore != null"
+                  :percentage="scope.row.qualityScore" 
+                  :color="getScoreColor(scope.row.qualityScore)"
+                  :stroke-width="6"
+                />
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="240" fixed="right">
               <template #default="scope">
                 <el-button type="primary" size="small" @click="openCorrectionDialog(scope.row)">更正</el-button>
                 <el-button type="info" size="small" @click="openCorrectionHistory(scope.row)">历史</el-button>
@@ -647,6 +670,43 @@ const openCorrectionHistory = async (row) => {
     ElMessage.error('加载更正历史失败')
   } finally {
     historyLoading.value = false
+  }
+}
+
+const getQualityStatusType = (status) => {
+  const map = {
+    NORMAL: 'success',
+    SUSPICIOUS: 'warning',
+    REVIEWED: 'primary',
+    IGNORED: 'info'
+  }
+  return map[status] || 'info'
+}
+
+const getQualityStatusText = (status) => {
+  const map = {
+    NORMAL: '正常',
+    SUSPICIOUS: '待复核',
+    REVIEWED: '已复核',
+    IGNORED: '已忽略'
+  }
+  return map[status] || '正常'
+}
+
+const getScoreColor = (score) => {
+  if (score >= 80) return '#67C23A'
+  if (score >= 60) return '#E6A23C'
+  return '#F56C6C'
+}
+
+const goToQualityReview = (row) => {
+  if (row.qualityStatus && row.qualityStatus !== 'NORMAL') {
+    router.push({
+      path: '/quality-review',
+      query: {
+        elderlyId: row.elderlyId
+      }
+    })
   }
 }
 

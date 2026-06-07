@@ -94,6 +94,10 @@
             <el-icon><Download /></el-icon>
             <span>导出任务中心</span>
           </el-menu-item>
+          <el-menu-item index="/quality-review">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>质量复核中心</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>

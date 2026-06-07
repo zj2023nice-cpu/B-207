@@ -33,6 +33,10 @@ public class HealthRecord {
     private LocalDateTime correctedAt;
     private String correctedBy;
     private Integer latestCorrectionId;
+    
+    private String qualityStatus;
+    private Integer qualityScore;
+    private String qualityIssues;
 
     @TableField(exist = false)
     private String elderlyName;

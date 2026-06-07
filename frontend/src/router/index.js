@@ -133,6 +133,12 @@ const routes = [
                 meta: { title: '数据导出任务中心' }
             },
             {
+                path: 'quality-review',
+                name: 'QualityReview',
+                component: () => import('../views/QualityReview.vue'),
+                meta: { title: '健康数据质量复核中心' }
+            },
+            {
                 path: 'search',
                 name: 'Search',
                 component: () => import('../views/Search.vue'),
