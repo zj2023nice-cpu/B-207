@@ -4,9 +4,14 @@ import com.smart.elderly.annotation.OperationLog;
 import com.smart.elderly.common.Result;
 import com.smart.elderly.entity.Elderly;
 import com.smart.elderly.service.ElderlyService;
+import com.smart.elderly.vo.ImportResultVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -43,5 +48,31 @@ public class ElderlyController {
     public Result<String> delete(@PathVariable Integer id) {
         elderlyService.removeById(id);
         return Result.success("删除成功");
+    }
+
+    @GetMapping("/import/template")
+    public void downloadTemplate(HttpServletResponse response) throws IOException {
+        elderlyService.downloadTemplate(response);
+    }
+
+    @OperationLog(operation = "批量导入老人信息", description = "批量导入老人信息")
+    @PostMapping("/import")
+    public Result<ImportResultVO> importData(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return Result.error("请选择上传文件");
+        }
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || (!originalFilename.endsWith(".xlsx") && !originalFilename.endsWith(".xls"))) {
+            return Result.error("文件格式不正确，请上传Excel文件(.xlsx或.xls)");
+        }
+        try {
+            ImportResultVO result = elderlyService.importData(file);
+            if (result.getHasError()) {
+                return Result.success(result);
+            }
+            return Result.success(result);
+        } catch (IOException e) {
+            return Result.error("文件解析失败：" + e.getMessage());
+        }
     }
 }

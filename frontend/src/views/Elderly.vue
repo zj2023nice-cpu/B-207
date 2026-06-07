@@ -39,6 +39,10 @@
               <el-icon><Download /></el-icon>
               导出数据
             </el-button>
+            <el-button type="success" @click="importDialogVisible = true" style="margin-left: 10px;">
+              <el-icon><Upload /></el-icon>
+              批量导入
+            </el-button>
           </div>
         </div>
       </template>
@@ -221,6 +225,101 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="importDialogVisible" title="批量导入老人信息" width="500px" @close="resetImport">
+      <el-alert 
+        title="导入说明" 
+        type="info" 
+        :closable="false" 
+        style="margin-bottom: 16px;"
+      >
+        <p>1. 请先下载导入模板，按照模板格式填写数据</p>
+        <p>2. 带 * 号的字段为必填项</p>
+        <p>3. 支持 .xlsx 和 .xls 格式的Excel文件</p>
+        <p>4. 单次导入建议不超过1000条数据</p>
+      </el-alert>
+      <div style="margin-bottom: 16px;">
+        <el-button type="primary" link @click="handleDownloadTemplate">
+          <el-icon><Download /></el-icon>
+          下载导入模板
+        </el-button>
+      </div>
+      <el-upload
+        ref="uploadRef"
+        :auto-upload="false"
+        :limit="1"
+        :on-exceed="handleFileExceed"
+        :before-upload="beforeFileUpload"
+        :on-change="handleFileChange"
+        accept=".xlsx,.xls"
+        drag
+        action="#"
+      >
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">
+          将文件拖到此处，或<em>点击上传</em>
+        </div>
+        <template #tip>
+          <div class="el-upload__tip">
+            只能上传 .xlsx 或 .xls 文件，且不超过 10MB
+          </div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <el-button @click="importDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="importing" @click="handleImportSubmit">
+          {{ importing ? '导入中...' : '开始导入' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="importResultVisible" title="导入结果" width="600px" @close="handleImportResultClose">
+      <div v-if="importResult">
+        <el-row :gutter="20" style="margin-bottom: 16px;">
+          <el-col :span="8">
+            <el-card shadow="hover">
+              <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #909399;">{{ importResult.totalCount }}</div>
+                <div style="color: #606266; margin-top: 4px;">总条数</div>
+              </div>
+            </el-card>
+          </el-col>
+          <el-col :span="8">
+            <el-card shadow="hover">
+              <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #67C23A;">{{ importResult.successCount }}</div>
+                <div style="color: #606266; margin-top: 4px;">成功</div>
+              </div>
+            </el-card>
+          </el-col>
+          <el-col :span="8">
+            <el-card shadow="hover">
+              <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #F56C6C;">{{ importResult.errorCount }}</div>
+                <div style="color: #606266; margin-top: 4px;">失败</div>
+              </div>
+            </el-card>
+          </el-col>
+        </el-row>
+        <div v-if="importResult.hasError && importResult.errors && importResult.errors.length > 0">
+          <el-divider content-position="left">错误详情</el-divider>
+          <el-table :data="importResult.errors" border max-height="300">
+            <el-table-column prop="rowNum" label="行号" width="80" align="center" />
+            <el-table-column prop="fieldName" label="字段" width="120" />
+            <el-table-column prop="errorMessage" label="错误信息" />
+          </el-table>
+        </div>
+        <div v-else>
+          <el-result icon="success" title="导入成功" sub-title="所有数据均已成功导入" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button v-if="importResult && importResult.hasError" @click="importResultVisible = false; importDialogVisible = true">
+          继续上传
+        </el-button>
+        <el-button type="primary" @click="handleImportResultClose">确定</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="tagDialogVisible" :title="isBatch ? '批量管理标签' : '管理标签 - ' + currentElderlyName" width="500px">
       <div class="tag-manage">
         <p style="margin-bottom: 16px; color: #606266;">请选择要{{ isBatch ? actionType === 'bind' ? '绑定' : '解绑' : '绑定/解绑' }}的标签：</p>
@@ -260,6 +359,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Upload, UploadFilled, Download } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -281,6 +381,13 @@ const originalTagIds = ref([])
 const isBatch = ref(false)
 const actionType = ref('bind')
 const followedMap = ref({})
+
+const importDialogVisible = ref(false)
+const importResultVisible = ref(false)
+const importing = ref(false)
+const uploadRef = ref(null)
+const selectedFile = ref(null)
+const importResult = ref(null)
 
 const form = ref({
   id: null,
@@ -555,6 +662,77 @@ const handleExport = async () => {
     console.error(error)
     ElMessage.error('创建导出任务失败')
   }
+}
+
+const handleDownloadTemplate = () => {
+  window.open('/api/elderly/import/template', '_blank')
+}
+
+const handleFileChange = (uploadFile) => {
+  selectedFile.value = uploadFile.raw
+}
+
+const handleFileExceed = () => {
+  ElMessage.warning('只能上传一个文件')
+}
+
+const beforeFileUpload = (file) => {
+  const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+  if (!isExcel) {
+    ElMessage.error('只能上传 .xlsx 或 .xls 格式的文件')
+    return false
+  }
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    ElMessage.error('文件大小不能超过 10MB')
+    return false
+  }
+  return true
+}
+
+const resetImport = () => {
+  selectedFile.value = null
+  importResult.value = null
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
+  }
+}
+
+const handleImportSubmit = async () => {
+  if (!selectedFile.value) {
+    ElMessage.warning('请选择要导入的文件')
+    return
+  }
+
+  importing.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', selectedFile.value)
+
+    const res = await request.post('/elderly/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 120000
+    })
+
+    importResult.value = res.data
+    importDialogVisible.value = false
+    importResultVisible.value = true
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('导入失败：' + (error.message || '未知错误'))
+  } finally {
+    importing.value = false
+  }
+}
+
+const handleImportResultClose = () => {
+  importResultVisible.value = false
+  if (importResult.value && importResult.value.successCount > 0) {
+    loadData()
+  }
+  resetImport()
 }
 </script>
 
