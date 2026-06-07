@@ -57,3 +57,14 @@ INSERT INTO health_records (elderly_id, blood_pressure, systolic_pressure, diast
 (1, '130/85', 130, 85, 37.5, 85, 96, 5.8, TRUE, DATE_SUB(NOW(), INTERVAL 1 HOUR)),
 (2, '118/75', 118, 75, 36.8, 68, 99, 5.0, FALSE, NOW()),
 (3, '140/90', 140, 90, 36.2, 75, 97, 6.0, FALSE, NOW());
+
+-- 老人关注关系表
+CREATE TABLE IF NOT EXISTS elderly_follow (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL COMMENT '用户ID',
+    elderly_id INT NOT NULL COMMENT '老人ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
+    UNIQUE KEY uk_user_elderly (user_id, elderly_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (elderly_id) REFERENCES elderly(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='老人关注关系表';

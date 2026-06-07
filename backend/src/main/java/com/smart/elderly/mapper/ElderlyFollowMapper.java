@@ -12,9 +12,15 @@ import java.util.List;
 public interface ElderlyFollowMapper extends BaseMapper<ElderlyFollow> {
     
     @Select("SELECT " +
-            "e.id as elderlyId, e.name, e.age, e.gender, e.phone, e.address, e.status, " +
-            "f.created_at as followTime, " +
-            "hr.check_time as lastCheckTime, " +
+            "e.id as elderly_id, " +
+            "e.name, " +
+            "e.age, " +
+            "e.gender, " +
+            "e.phone, " +
+            "e.address, " +
+            "e.status, " +
+            "f.created_at as follow_time, " +
+            "hr.check_time as last_check_time, " +
             "CASE " +
             "  WHEN hr.id IS NOT NULL THEN " +
             "    CONCAT(" +
@@ -25,10 +31,10 @@ public interface ElderlyFollowMapper extends BaseMapper<ElderlyFollow> {
             "      ', 血糖:', IFNULL(hr.blood_sugar, '-')" +
             "    ) " +
             "  ELSE NULL " +
-            "END as lastHealthSummary, " +
-            "hr.is_abnormal as lastIsAbnormal, " +
-            "(SELECT COUNT(*) FROM health_warning_records w WHERE w.elderly_id = e.id AND w.status = 'PENDING') as pendingWarningCount, " +
-            "(SELECT COUNT(*) FROM notifications n WHERE n.elderly_id = e.id AND n.user_id = #{userId} AND n.status = 'UNREAD') as unreadNotificationCount " +
+            "END as last_health_summary, " +
+            "hr.is_abnormal as last_is_abnormal, " +
+            "(SELECT COUNT(*) FROM health_warning_records w WHERE w.elderly_id = e.id AND w.status = 'PENDING') as pending_warning_count, " +
+            "(SELECT COUNT(*) FROM notifications n WHERE n.elderly_id = e.id AND n.user_id = #{userId} AND n.status = 'UNREAD') as unread_notification_count " +
             "FROM elderly_follow f " +
             "LEFT JOIN elderly e ON f.elderly_id = e.id " +
             "LEFT JOIN (" +

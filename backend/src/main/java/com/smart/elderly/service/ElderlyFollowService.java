@@ -9,6 +9,8 @@ import com.smart.elderly.vo.FollowedElderlyVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,13 +59,13 @@ public class ElderlyFollowService extends ServiceImpl<ElderlyFollowMapper, Elder
         Long count = this.count(new LambdaQueryWrapper<ElderlyFollow>()
                 .eq(ElderlyFollow::getUserId, userId)
                 .eq(ElderlyFollow::getElderlyId, elderlyId));
-        return count > 0;
+        return count != null && count > 0;
     }
 
     public List<FollowedElderlyVO> getFollowedList() {
         Integer userId = UserContextHolder.getUserId();
         if (userId == null) {
-            return List.of();
+            return Collections.emptyList();
         }
         return baseMapper.getFollowedElderlyList(userId);
     }
@@ -71,7 +73,7 @@ public class ElderlyFollowService extends ServiceImpl<ElderlyFollowMapper, Elder
     public List<Integer> getFollowedIds() {
         Integer userId = UserContextHolder.getUserId();
         if (userId == null) {
-            return List.of();
+            return Collections.emptyList();
         }
         return baseMapper.getFollowedElderlyIds(userId);
     }
