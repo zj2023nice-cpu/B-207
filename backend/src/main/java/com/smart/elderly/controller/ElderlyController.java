@@ -5,12 +5,20 @@ import com.smart.elderly.common.Result;
 import com.smart.elderly.dto.DuplicateElderlyGroupDTO;
 import com.smart.elderly.dto.ElderlyMergeDTO;
 import com.smart.elderly.dto.MergePreviewDTO;
+import com.smart.elderly.dto.MergePreviewRequestDTO;
 import com.smart.elderly.entity.Elderly;
 import com.smart.elderly.service.ElderlyMergeService;
 import com.smart.elderly.service.ElderlyService;
 import com.smart.elderly.vo.ImportResultVO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -30,7 +38,9 @@ public class ElderlyController {
 
     @GetMapping("/list")
     public Result<List<Elderly>> list() {
-        return Result.success(elderlyService.list());
+        return Result.success(elderlyService.lambdaQuery()
+                .isNull(Elderly::getMergedToId)
+                .list());
     }
 
     @OperationLog(operation = "添加老人信息", description = "添加新的老人信息")
@@ -64,7 +74,7 @@ public class ElderlyController {
 
     @OperationLog(operation = "批量导入老人信息", description = "批量导入老人信息")
     @PostMapping("/import")
-    public Result<ImportResultVO> importData(@RequestParam("file") MultipartFile file) {
+    public Result<ImportResultVO> importData(@org.springframework.web.bind.annotation.RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return Result.error("请选择上传文件");
         }
@@ -74,9 +84,6 @@ public class ElderlyController {
         }
         try {
             ImportResultVO result = elderlyService.importData(file);
-            if (result.getHasError()) {
-                return Result.success(result);
-            }
             return Result.success(result);
         } catch (IOException e) {
             return Result.error("文件解析失败：" + e.getMessage());
@@ -89,14 +96,12 @@ public class ElderlyController {
         return Result.success(elderlyMergeService.detectDuplicates());
     }
 
-    @GetMapping("/merge/preview")
-    public Result<MergePreviewDTO> getMergePreview(
-            @RequestParam Integer primaryId,
-            @RequestParam Integer mergedId) {
-        return Result.success(elderlyMergeService.getMergePreview(primaryId, mergedId));
+    @PostMapping("/merge/preview")
+    public Result<MergePreviewDTO> getMergePreview(@Valid @RequestBody MergePreviewRequestDTO requestDTO) {
+        return Result.success(elderlyMergeService.getMergePreview(requestDTO));
     }
 
-    @OperationLog(operation = "合并老人档案", description = "合并两个重复的老人档案")
+    @OperationLog(operation = "合并老人档案", description = "合并一组重复的老人档案")
     @PostMapping("/merge")
     public Result<String> mergeElderly(@Valid @RequestBody ElderlyMergeDTO mergeDTO) {
         try {

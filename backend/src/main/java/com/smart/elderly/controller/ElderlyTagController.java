@@ -11,11 +11,19 @@ import com.smart.elderly.service.ElderlyTagRelationService;
 import com.smart.elderly.service.ElderlyTagService;
 import com.smart.elderly.vo.ElderlyWithTagsVO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/elderly-tags")
@@ -102,7 +110,7 @@ public class ElderlyTagController {
     public Result<List<ElderlyTag>> getTagsByElderlyId(@PathVariable Integer elderlyId) {
         List<Integer> tagIds = elderlyTagRelationService.getTagIdsByElderlyId(elderlyId);
         if (tagIds.isEmpty()) {
-            return Result.success(new ArrayList<>());
+            return Result.success(new ArrayList<ElderlyTag>());
         }
         List<ElderlyTag> tags = elderlyTagService.listByIds(tagIds);
         return Result.success(tags);
@@ -156,18 +164,21 @@ public class ElderlyTagController {
         if (tagId != null) {
             List<Integer> elderlyIds = elderlyTagRelationService.getElderlyIdsByTagId(tagId);
             if (elderlyIds.isEmpty()) {
-                return Result.success(new ArrayList<>());
+                return Result.success(new ArrayList<ElderlyWithTagsVO>());
             }
             elderlyList = elderlyService.lambdaQuery()
                     .in(Elderly::getId, elderlyIds)
+                    .isNull(Elderly::getMergedToId)
                     .like(keyword != null && !keyword.isEmpty(), Elderly::getName, keyword)
                     .list();
         } else {
             elderlyList = elderlyService.lambdaQuery()
+                    .isNull(Elderly::getMergedToId)
                     .like(keyword != null && !keyword.isEmpty(), Elderly::getName, keyword)
                     .list();
         }
-        List<ElderlyWithTagsVO> result = new ArrayList<>();
+
+        List<ElderlyWithTagsVO> result = new ArrayList<ElderlyWithTagsVO>();
         for (Elderly elderly : elderlyList) {
             ElderlyWithTagsVO vo = new ElderlyWithTagsVO();
             vo.setElderly(elderly);
@@ -175,7 +186,7 @@ public class ElderlyTagController {
             if (!tagIds.isEmpty()) {
                 vo.setTags(elderlyTagService.listByIds(tagIds));
             } else {
-                vo.setTags(new ArrayList<>());
+                vo.setTags(new ArrayList<ElderlyTag>());
             }
             result.add(vo);
         }

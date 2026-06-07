@@ -1,5 +1,6 @@
 package com.smart.elderly.export.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.smart.elderly.entity.Elderly;
 import com.smart.elderly.export.BaseExportProvider;
 import com.smart.elderly.export.ElderlyExcelVO;
@@ -34,7 +35,7 @@ public class ElderlyExportProvider extends BaseExportProvider<ElderlyExcelVO> {
 
     @Override
     public List<String> getHeaders() {
-        List<String> headers = new ArrayList<>();
+        List<String> headers = new ArrayList<String>();
         headers.add("ID");
         headers.add("姓名");
         headers.add("年龄");
@@ -59,22 +60,24 @@ public class ElderlyExportProvider extends BaseExportProvider<ElderlyExcelVO> {
         if (tagId != null) {
             List<Integer> elderlyIds = elderlyTagRelationService.getElderlyIdsByTagId(tagId);
             if (elderlyIds.isEmpty()) {
-                elderlyList = new ArrayList<>();
+                elderlyList = new ArrayList<Elderly>();
             } else {
                 elderlyList = elderlyMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Elderly>()
-                        .in("id", elderlyIds)
-                        .like(keyword != null && !keyword.isEmpty(), "name", keyword)
+                        new QueryWrapper<Elderly>()
+                                .in("id", elderlyIds)
+                                .isNull("merged_to_id")
+                                .like(keyword != null && !keyword.isEmpty(), "name", keyword)
                 );
             }
         } else {
             elderlyList = elderlyMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Elderly>()
-                    .like(keyword != null && !keyword.isEmpty(), "name", keyword)
+                    new QueryWrapper<Elderly>()
+                            .isNull("merged_to_id")
+                            .like(keyword != null && !keyword.isEmpty(), "name", keyword)
             );
         }
 
-        List<ElderlyExcelVO> result = new ArrayList<>();
+        List<ElderlyExcelVO> result = new ArrayList<ElderlyExcelVO>();
         for (Elderly elderly : elderlyList) {
             ElderlyExcelVO vo = new ElderlyExcelVO();
             BeanUtils.copyProperties(elderly, vo);
@@ -85,7 +88,7 @@ public class ElderlyExportProvider extends BaseExportProvider<ElderlyExcelVO> {
 
     @Override
     public List<Object> convertToRow(ElderlyExcelVO data) {
-        List<Object> row = new ArrayList<>();
+        List<Object> row = new ArrayList<Object>();
         row.add(data.getId());
         row.add(data.getName());
         row.add(data.getAge());

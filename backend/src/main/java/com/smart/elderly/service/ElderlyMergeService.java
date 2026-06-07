@@ -5,14 +5,44 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.smart.elderly.dto.DuplicateElderlyGroupDTO;
 import com.smart.elderly.dto.ElderlyMergeDTO;
 import com.smart.elderly.dto.MergePreviewDTO;
-import com.smart.elderly.entity.*;
-import com.smart.elderly.mapper.*;
+import com.smart.elderly.dto.MergePreviewRequestDTO;
+import com.smart.elderly.entity.Elderly;
+import com.smart.elderly.entity.ElderlyFollow;
+import com.smart.elderly.entity.ElderlyTagRelation;
+import com.smart.elderly.entity.HealthRecord;
+import com.smart.elderly.entity.HealthRecordCorrection;
+import com.smart.elderly.entity.HealthWarningRecord;
+import com.smart.elderly.entity.HealthWarningThreshold;
+import com.smart.elderly.entity.Notification;
+import com.smart.elderly.entity.NursingObservationRecord;
+import com.smart.elderly.entity.VisitorVisitRecord;
+import com.smart.elderly.mapper.ElderlyFollowMapper;
+import com.smart.elderly.mapper.ElderlyMapper;
+import com.smart.elderly.mapper.ElderlyTagRelationMapper;
+import com.smart.elderly.mapper.HealthRecordCorrectionMapper;
+import com.smart.elderly.mapper.HealthRecordMapper;
+import com.smart.elderly.mapper.HealthWarningRecordMapper;
+import com.smart.elderly.mapper.HealthWarningThresholdMapper;
+import com.smart.elderly.mapper.NotificationMapper;
+import com.smart.elderly.mapper.NursingObservationRecordMapper;
+import com.smart.elderly.mapper.VisitorVisitRecordMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,7 +69,11 @@ public class ElderlyMergeService {
     @Autowired
     private HealthWarningThresholdMapper healthWarningThresholdMapper;
 
-    private static final Map<String, String> FIELD_LABELS = new HashMap<>();
+    private static final Map<String, String> FIELD_LABELS = new HashMap<String, String>();
+    private static final List<String> RELATED_DATA_TYPES = Arrays.asList(
+            "健康记录", "健康预警", "通知消息", "标签关联", "关注关系", "护理观察", "探访记录", "记录修正", "阈值配置"
+    );
+
     static {
         FIELD_LABELS.put("name", "姓名");
         FIELD_LABELS.put("age", "年龄");
@@ -54,19 +88,21 @@ public class ElderlyMergeService {
 
     public List<DuplicateElderlyGroupDTO> detectDuplicates() {
         List<Elderly> allElderly = elderlyMapper.selectList(
-            new LambdaQueryWrapper<Elderly>()
-                .isNull(Elderly::getMergedToId)
-                .orderByAsc(Elderly::getId)
+                new LambdaQueryWrapper<Elderly>()
+                        .isNull(Elderly::getMergedToId)
+                        .orderByAsc(Elderly::getId)
         );
 
-        List<DuplicateElderlyGroupDTO> groups = new ArrayList<>();
-        Set<Integer> processed = new HashSet<>();
+        List<DuplicateElderlyGroupDTO> groups = new ArrayList<DuplicateElderlyGroupDTO>();
+        Set<Integer> processed = new HashSet<Integer>();
 
         for (int i = 0; i < allElderly.size(); i++) {
             Elderly e1 = allElderly.get(i);
-            if (processed.contains(e1.getId())) continue;
+            if (processed.contains(e1.getId())) {
+                continue;
+            }
 
-            List<Elderly> group = new ArrayList<>();
+            List<Elderly> group = new ArrayList<Elderly>();
             group.add(e1);
             processed.add(e1.getId());
             int maxConfidence = 0;
@@ -74,7 +110,9 @@ public class ElderlyMergeService {
 
             for (int j = i + 1; j < allElderly.size(); j++) {
                 Elderly e2 = allElderly.get(j);
-                if (processed.contains(e2.getId())) continue;
+                if (processed.contains(e2.getId())) {
+                    continue;
+                }
 
                 MatchResult result = calculateMatchScore(e1, e2);
                 if (result.confidence >= 65) {
@@ -124,8 +162,8 @@ public class ElderlyMergeService {
                     && e1.getAge() != null && e2.getAge() != null
                     && Math.abs(e1.getAge() - e2.getAge()) <= 3) {
                 double addrSim = calculateStringSimilarity(
-                    e1.getAddress() == null ? "" : e1.getAddress(),
-                    e2.getAddress() == null ? "" : e2.getAddress()
+                        e1.getAddress() == null ? "" : e1.getAddress(),
+                        e2.getAddress() == null ? "" : e2.getAddress()
                 );
                 if (addrSim >= 0.7) {
                     score = 80;
@@ -149,13 +187,23 @@ public class ElderlyMergeService {
     }
 
     private double calculateStringSimilarity(String s1, String s2) {
-        if (s1 == null) s1 = "";
-        if (s2 == null) s2 = "";
-        if (s1.isEmpty() && s2.isEmpty()) return 1.0;
-        if (s1.isEmpty() || s2.isEmpty()) return 0.0;
+        if (s1 == null) {
+            s1 = "";
+        }
+        if (s2 == null) {
+            s2 = "";
+        }
+        if (s1.isEmpty() && s2.isEmpty()) {
+            return 1.0;
+        }
+        if (s1.isEmpty() || s2.isEmpty()) {
+            return 0.0;
+        }
 
         int maxLength = Math.max(s1.length(), s2.length());
-        if (maxLength == 0) return 1.0;
+        if (maxLength == 0) {
+            return 1.0;
+        }
 
         int distance = levenshteinDistance(s1, s2);
         return 1.0 - (double) distance / maxLength;
@@ -166,8 +214,12 @@ public class ElderlyMergeService {
         int len2 = s2.length();
         int[][] dp = new int[len1 + 1][len2 + 1];
 
-        for (int i = 0; i <= len1; i++) dp[i][0] = i;
-        for (int j = 0; j <= len2; j++) dp[0][j] = j;
+        for (int i = 0; i <= len1; i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= len2; j++) {
+            dp[0][j] = j;
+        }
 
         for (int i = 1; i <= len1; i++) {
             for (int j = 1; j <= len2; j++) {
@@ -180,8 +232,8 @@ public class ElderlyMergeService {
 
     private int calculateTotalRelatedData(List<Elderly> group) {
         int total = 0;
-        for (Elderly e : group) {
-            total += countRelatedData(e.getId());
+        for (Elderly elderly : group) {
+            total += countRelatedData(elderly.getId());
         }
         return total;
     }
@@ -200,65 +252,141 @@ public class ElderlyMergeService {
         return count;
     }
 
-    public MergePreviewDTO getMergePreview(Integer primaryId, Integer mergedId) {
-        Elderly primary = elderlyMapper.selectById(primaryId);
-        Elderly merged = elderlyMapper.selectById(mergedId);
-
-        if (primary == null || merged == null) {
-            throw new RuntimeException("老人档案不存在");
-        }
+    public MergePreviewDTO getMergePreview(MergePreviewRequestDTO requestDTO) {
+        Integer primaryId = requestDTO.getPrimaryElderlyId();
+        Elderly primary = getAvailableElderly(primaryId, "主档案不存在");
+        List<Integer> mergedIds = normalizeMergedIds(requestDTO.getMergedElderlyIds(), primaryId);
+        List<Elderly> mergedElderlyList = getAvailableMergedElderlyList(mergedIds, primaryId);
 
         MergePreviewDTO dto = new MergePreviewDTO();
         dto.setPrimaryElderly(primary);
-        dto.setMergedElderly(merged);
-        dto.setConflictFields(identifyConflictFields(primary, merged));
-        dto.setRelatedDataCounts(getRelatedDataCounts(mergedId));
-
+        dto.setMergedElderlyList(mergedElderlyList);
+        dto.setConflictFields(identifyConflictFields(primary, mergedElderlyList));
+        dto.setRelatedDataCounts(getAggregatedRelatedDataCounts(mergedIds));
         return dto;
     }
 
-    private List<MergePreviewDTO.ConflictField> identifyConflictFields(Elderly primary, Elderly merged) {
-        List<MergePreviewDTO.ConflictField> conflicts = new ArrayList<>();
-
-        addConflictIfDifferent(conflicts, "name", primary.getName(), merged.getName(), primary.getName());
-        addConflictIfDifferent(conflicts, "age", primary.getAge(), merged.getAge(), primary.getAge());
-        addConflictIfDifferent(conflicts, "gender", primary.getGender(), merged.getGender(), primary.getGender());
-        addConflictIfDifferent(conflicts, "phone", primary.getPhone(), merged.getPhone(), primary.getPhone());
-        addConflictIfDifferent(conflicts, "address", primary.getAddress(), merged.getAddress(), primary.getAddress());
-        addConflictIfDifferent(conflicts, "emergencyContactName", primary.getEmergencyContactName(), merged.getEmergencyContactName(), primary.getEmergencyContactName());
-        addConflictIfDifferent(conflicts, "emergencyContactPhone", primary.getEmergencyContactPhone(), merged.getEmergencyContactPhone(), primary.getEmergencyContactPhone());
-        addConflictIfDifferent(conflicts, "emergencyContactRelation", primary.getEmergencyContactRelation(), merged.getEmergencyContactRelation(), primary.getEmergencyContactRelation());
-        addConflictIfDifferent(conflicts, "status", primary.getStatus(), merged.getStatus(), primary.getStatus());
-
+    private List<MergePreviewDTO.ConflictField> identifyConflictFields(Elderly primary, List<Elderly> mergedElderlyList) {
+        List<MergePreviewDTO.ConflictField> conflicts = new ArrayList<MergePreviewDTO.ConflictField>();
+        addConflictField(conflicts, "name", primary, mergedElderlyList, Elderly::getName);
+        addConflictField(conflicts, "age", primary, mergedElderlyList, Elderly::getAge);
+        addConflictField(conflicts, "gender", primary, mergedElderlyList, Elderly::getGender);
+        addConflictField(conflicts, "phone", primary, mergedElderlyList, Elderly::getPhone);
+        addConflictField(conflicts, "address", primary, mergedElderlyList, Elderly::getAddress);
+        addConflictField(conflicts, "emergencyContactName", primary, mergedElderlyList, Elderly::getEmergencyContactName);
+        addConflictField(conflicts, "emergencyContactPhone", primary, mergedElderlyList, Elderly::getEmergencyContactPhone);
+        addConflictField(conflicts, "emergencyContactRelation", primary, mergedElderlyList, Elderly::getEmergencyContactRelation);
+        addConflictField(conflicts, "status", primary, mergedElderlyList, Elderly::getStatus);
         return conflicts;
     }
 
-    private void addConflictIfDifferent(List<MergePreviewDTO.ConflictField> conflicts, String fieldName,
-                                        Object primaryValue, Object mergedValue, Object recommended) {
-        boolean pEmpty = primaryValue == null || (primaryValue instanceof String && ((String) primaryValue).trim().isEmpty());
-        boolean mEmpty = mergedValue == null || (mergedValue instanceof String && ((String) mergedValue).trim().isEmpty());
+    private void addConflictField(List<MergePreviewDTO.ConflictField> conflicts,
+                                  String fieldName,
+                                  Elderly primary,
+                                  List<Elderly> mergedElderlyList,
+                                  Function<Elderly, Object> valueGetter) {
+        Object primaryValue = valueGetter.apply(primary);
+        LinkedHashMap<String, MergePreviewDTO.ValueOption> optionMap = new LinkedHashMap<String, MergePreviewDTO.ValueOption>();
+        addOption(optionMap, primaryValue, "主档案(ID:" + primary.getId() + ")");
+        for (Elderly merged : mergedElderlyList) {
+            addOption(optionMap, valueGetter.apply(merged), merged.getName() + "(ID:" + merged.getId() + ")");
+        }
 
-        if (pEmpty && !mEmpty) {
-            MergePreviewDTO.ConflictField cf = new MergePreviewDTO.ConflictField();
-            cf.setFieldName(fieldName);
-            cf.setFieldLabel(FIELD_LABELS.getOrDefault(fieldName, fieldName));
-            cf.setPrimaryValue(primaryValue);
-            cf.setMergedValue(mergedValue);
-            cf.setRecommendedValue(mergedValue);
-            conflicts.add(cf);
-        } else if (!pEmpty && !mEmpty && !primaryValue.equals(mergedValue)) {
-            MergePreviewDTO.ConflictField cf = new MergePreviewDTO.ConflictField();
-            cf.setFieldName(fieldName);
-            cf.setFieldLabel(FIELD_LABELS.getOrDefault(fieldName, fieldName));
-            cf.setPrimaryValue(primaryValue);
-            cf.setMergedValue(mergedValue);
-            cf.setRecommendedValue(recommended);
-            conflicts.add(cf);
+        if (optionMap.isEmpty()) {
+            return;
+        }
+
+        boolean primaryHasValue = !isEmptyValue(primaryValue);
+        if (optionMap.size() == 1 && primaryHasValue) {
+            String onlyKey = optionMap.keySet().iterator().next();
+            if (onlyKey.equals(normalizeOptionValue(primaryValue))) {
+                return;
+            }
+        }
+
+        List<MergePreviewDTO.ValueOption> options = new ArrayList<MergePreviewDTO.ValueOption>(optionMap.values());
+        Object recommendedValue = primaryHasValue ? primaryValue : options.get(0).getValue();
+        String recommendedKey = normalizeOptionValue(recommendedValue);
+        for (int i = 0; i < options.size(); i++) {
+            MergePreviewDTO.ValueOption option = options.get(i);
+            option.setOptionKey(fieldName + "_option_" + i);
+            option.setRecommended(normalizedEquals(option.getValue(), recommendedKey));
+        }
+
+        if (options.size() == 1 && !primaryHasValue) {
+            MergePreviewDTO.ConflictField field = new MergePreviewDTO.ConflictField();
+            field.setFieldName(fieldName);
+            field.setFieldLabel(FIELD_LABELS.getOrDefault(fieldName, fieldName));
+            field.setPrimaryValue(primaryValue);
+            field.setRecommendedValue(recommendedValue);
+            field.setOptions(options);
+            conflicts.add(field);
+            return;
+        }
+
+        if (options.size() > 1) {
+            MergePreviewDTO.ConflictField field = new MergePreviewDTO.ConflictField();
+            field.setFieldName(fieldName);
+            field.setFieldLabel(FIELD_LABELS.getOrDefault(fieldName, fieldName));
+            field.setPrimaryValue(primaryValue);
+            field.setRecommendedValue(recommendedValue);
+            field.setOptions(options);
+            conflicts.add(field);
         }
     }
 
+    private void addOption(LinkedHashMap<String, MergePreviewDTO.ValueOption> optionMap, Object value, String sourceLabel) {
+        if (isEmptyValue(value)) {
+            return;
+        }
+        String normalizedValue = normalizeOptionValue(value);
+        MergePreviewDTO.ValueOption option = optionMap.get(normalizedValue);
+        if (option == null) {
+            option = new MergePreviewDTO.ValueOption();
+            option.setValue(value);
+            option.setSourceLabels(new ArrayList<String>());
+            optionMap.put(normalizedValue, option);
+        }
+        option.getSourceLabels().add(sourceLabel);
+    }
+
+    private boolean isEmptyValue(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof String) {
+            return ((String) value).trim().isEmpty();
+        }
+        return false;
+    }
+
+    private String normalizeOptionValue(Object value) {
+        if (value == null) {
+            return "";
+        }
+        if (value instanceof String) {
+            return ((String) value).trim();
+        }
+        return String.valueOf(value);
+    }
+
+    private boolean normalizedEquals(Object value, String normalizedValue) {
+        return normalizeOptionValue(value).equals(normalizedValue);
+    }
+
+    private Map<String, Integer> getAggregatedRelatedDataCounts(List<Integer> elderlyIds) {
+        Map<String, Integer> totalCounts = createEmptyRelatedDataCounts();
+        for (Integer elderlyId : elderlyIds) {
+            Map<String, Integer> counts = getRelatedDataCounts(elderlyId);
+            for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+                totalCounts.put(entry.getKey(), totalCounts.get(entry.getKey()) + entry.getValue());
+            }
+        }
+        return totalCounts;
+    }
+
     private Map<String, Integer> getRelatedDataCounts(Integer elderlyId) {
-        Map<String, Integer> counts = new LinkedHashMap<>();
+        Map<String, Integer> counts = createEmptyRelatedDataCounts();
         counts.put("健康记录", healthRecordMapper.selectCount(new LambdaQueryWrapper<HealthRecord>().eq(HealthRecord::getElderlyId, elderlyId)).intValue());
         counts.put("健康预警", healthWarningRecordMapper.selectCount(new LambdaQueryWrapper<HealthWarningRecord>().eq(HealthWarningRecord::getElderlyId, elderlyId)).intValue());
         counts.put("通知消息", notificationMapper.selectCount(new LambdaQueryWrapper<Notification>().eq(Notification::getElderlyId, elderlyId)).intValue());
@@ -271,25 +399,20 @@ public class ElderlyMergeService {
         return counts;
     }
 
+    private Map<String, Integer> createEmptyRelatedDataCounts() {
+        Map<String, Integer> counts = new LinkedHashMap<String, Integer>();
+        for (String type : RELATED_DATA_TYPES) {
+            counts.put(type, 0);
+        }
+        return counts;
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void mergeElderly(ElderlyMergeDTO mergeDTO, String operator) {
         Integer primaryId = mergeDTO.getPrimaryElderlyId();
-        Integer mergedId = mergeDTO.getMergedElderlyId();
-
-        if (primaryId.equals(mergedId)) {
-            throw new RuntimeException("不能合并同一个档案");
-        }
-
-        Elderly primary = elderlyMapper.selectById(primaryId);
-        Elderly merged = elderlyMapper.selectById(mergedId);
-
-        if (primary == null || merged == null) {
-            throw new RuntimeException("老人档案不存在");
-        }
-
-        if (merged.getMergedToId() != null) {
-            throw new RuntimeException("该档案已被合并，不能再次合并");
-        }
+        Elderly primary = getAvailableElderly(primaryId, "主档案不存在");
+        List<Integer> mergedIds = normalizeMergedIds(mergeDTO.getMergedElderlyIds(), primaryId);
+        List<Elderly> mergedElderlyList = getAvailableMergedElderlyList(mergedIds, primaryId);
 
         if (mergeDTO.getFieldOverrides() != null && !mergeDTO.getFieldOverrides().isEmpty()) {
             applyFieldOverrides(primary, mergeDTO.getFieldOverrides());
@@ -297,13 +420,71 @@ public class ElderlyMergeService {
             elderlyMapper.updateById(primary);
         }
 
-        migrateRelatedData(mergedId, primaryId);
+        for (Elderly merged : mergedElderlyList) {
+            migrateRelatedData(merged.getId(), primaryId);
+            merged.setMergedToId(primaryId);
+            merged.setMergedAt(LocalDateTime.now());
+            merged.setMergedBy(operator);
+            merged.setUpdatedAt(LocalDateTime.now());
+            elderlyMapper.updateById(merged);
+        }
+    }
 
-        merged.setMergedToId(primaryId);
-        merged.setMergedAt(LocalDateTime.now());
-        merged.setMergedBy(operator);
-        merged.setUpdatedAt(LocalDateTime.now());
-        elderlyMapper.updateById(merged);
+    private Elderly getAvailableElderly(Integer elderlyId, String notFoundMessage) {
+        Elderly elderly = elderlyMapper.selectById(elderlyId);
+        if (elderly == null) {
+            throw new RuntimeException(notFoundMessage);
+        }
+        if (elderly.getMergedToId() != null) {
+            throw new RuntimeException("该档案已被合并，不能继续操作");
+        }
+        return elderly;
+    }
+
+    private List<Integer> normalizeMergedIds(List<Integer> mergedIds, Integer primaryId) {
+        if (mergedIds == null || mergedIds.isEmpty()) {
+            throw new RuntimeException("被合并档案不能为空");
+        }
+
+        LinkedHashSet<Integer> uniqueIds = new LinkedHashSet<Integer>();
+        for (Integer mergedId : mergedIds) {
+            if (mergedId == null) {
+                continue;
+            }
+            if (mergedId.equals(primaryId)) {
+                throw new RuntimeException("主档案不能出现在被合并档案列表中");
+            }
+            uniqueIds.add(mergedId);
+        }
+
+        if (uniqueIds.isEmpty()) {
+            throw new RuntimeException("被合并档案不能为空");
+        }
+        return new ArrayList<Integer>(uniqueIds);
+    }
+
+    private List<Elderly> getAvailableMergedElderlyList(List<Integer> mergedIds, Integer primaryId) {
+        List<Elderly> mergedList = elderlyMapper.selectBatchIds(mergedIds);
+        if (mergedList.size() != mergedIds.size()) {
+            throw new RuntimeException("存在不存在的副档案");
+        }
+
+        Map<Integer, Elderly> mergedMap = mergedList.stream().collect(Collectors.toMap(Elderly::getId, Function.identity()));
+        List<Elderly> orderedMergedList = new ArrayList<Elderly>();
+        for (Integer mergedId : mergedIds) {
+            Elderly merged = mergedMap.get(mergedId);
+            if (merged == null) {
+                throw new RuntimeException("存在不存在的副档案");
+            }
+            if (mergedId.equals(primaryId)) {
+                throw new RuntimeException("主档案不能出现在被合并档案列表中");
+            }
+            if (merged.getMergedToId() != null) {
+                throw new RuntimeException("档案ID " + mergedId + " 已被合并，不能再次合并");
+            }
+            orderedMergedList.add(merged);
+        }
+        return orderedMergedList;
     }
 
     private void applyFieldOverrides(Elderly elderly, Map<String, Object> overrides) {
@@ -342,48 +523,50 @@ public class ElderlyMergeService {
                 case "status":
                     elderly.setStatus((String) value);
                     break;
+                default:
+                    break;
             }
         }
     }
 
     private void migrateRelatedData(Integer fromId, Integer toId) {
         healthRecordMapper.update(null,
-            new LambdaUpdateWrapper<HealthRecord>()
-                .eq(HealthRecord::getElderlyId, fromId)
-                .set(HealthRecord::getElderlyId, toId)
+                new LambdaUpdateWrapper<HealthRecord>()
+                        .eq(HealthRecord::getElderlyId, fromId)
+                        .set(HealthRecord::getElderlyId, toId)
         );
 
         healthWarningRecordMapper.update(null,
-            new LambdaUpdateWrapper<HealthWarningRecord>()
-                .eq(HealthWarningRecord::getElderlyId, fromId)
-                .set(HealthWarningRecord::getElderlyId, toId)
+                new LambdaUpdateWrapper<HealthWarningRecord>()
+                        .eq(HealthWarningRecord::getElderlyId, fromId)
+                        .set(HealthWarningRecord::getElderlyId, toId)
         );
 
         notificationMapper.update(null,
-            new LambdaUpdateWrapper<Notification>()
-                .eq(Notification::getElderlyId, fromId)
-                .set(Notification::getElderlyId, toId)
+                new LambdaUpdateWrapper<Notification>()
+                        .eq(Notification::getElderlyId, fromId)
+                        .set(Notification::getElderlyId, toId)
         );
 
         migrateTagRelations(fromId, toId);
         migrateFollows(fromId, toId);
 
         nursingObservationRecordMapper.update(null,
-            new LambdaUpdateWrapper<NursingObservationRecord>()
-                .eq(NursingObservationRecord::getElderlyId, fromId)
-                .set(NursingObservationRecord::getElderlyId, toId)
+                new LambdaUpdateWrapper<NursingObservationRecord>()
+                        .eq(NursingObservationRecord::getElderlyId, fromId)
+                        .set(NursingObservationRecord::getElderlyId, toId)
         );
 
         visitorVisitRecordMapper.update(null,
-            new LambdaUpdateWrapper<VisitorVisitRecord>()
-                .eq(VisitorVisitRecord::getElderlyId, fromId)
-                .set(VisitorVisitRecord::getElderlyId, toId)
+                new LambdaUpdateWrapper<VisitorVisitRecord>()
+                        .eq(VisitorVisitRecord::getElderlyId, fromId)
+                        .set(VisitorVisitRecord::getElderlyId, toId)
         );
 
         healthRecordCorrectionMapper.update(null,
-            new LambdaUpdateWrapper<HealthRecordCorrection>()
-                .eq(HealthRecordCorrection::getElderlyId, fromId)
-                .set(HealthRecordCorrection::getElderlyId, toId)
+                new LambdaUpdateWrapper<HealthRecordCorrection>()
+                        .eq(HealthRecordCorrection::getElderlyId, fromId)
+                        .set(HealthRecordCorrection::getElderlyId, toId)
         );
 
         migrateThresholds(fromId, toId);
@@ -404,20 +587,20 @@ public class ElderlyMergeService {
         }
 
         elderlyTagRelationMapper.delete(new LambdaQueryWrapper<ElderlyTagRelation>()
-            .eq(ElderlyTagRelation::getElderlyId, fromId));
+                .eq(ElderlyTagRelation::getElderlyId, fromId));
     }
 
     private void migrateFollows(Integer fromId, Integer toId) {
         List<ElderlyFollow> fromFollows = elderlyFollowMapper.selectList(
-            new LambdaQueryWrapper<ElderlyFollow>().eq(ElderlyFollow::getElderlyId, fromId)
+                new LambdaQueryWrapper<ElderlyFollow>().eq(ElderlyFollow::getElderlyId, fromId)
         );
         List<ElderlyFollow> toFollows = elderlyFollowMapper.selectList(
-            new LambdaQueryWrapper<ElderlyFollow>().eq(ElderlyFollow::getElderlyId, toId)
+                new LambdaQueryWrapper<ElderlyFollow>().eq(ElderlyFollow::getElderlyId, toId)
         );
 
         Set<Integer> toUserIds = toFollows.stream()
-            .map(ElderlyFollow::getUserId)
-            .collect(Collectors.toSet());
+                .map(ElderlyFollow::getUserId)
+                .collect(Collectors.toSet());
 
         for (ElderlyFollow follow : fromFollows) {
             if (!toUserIds.contains(follow.getUserId())) {
@@ -430,20 +613,20 @@ public class ElderlyMergeService {
         }
 
         elderlyFollowMapper.delete(new LambdaQueryWrapper<ElderlyFollow>()
-            .eq(ElderlyFollow::getElderlyId, fromId));
+                .eq(ElderlyFollow::getElderlyId, fromId));
     }
 
     private void migrateThresholds(Integer fromId, Integer toId) {
         List<HealthWarningThreshold> fromThresholds = healthWarningThresholdMapper.selectList(
-            new LambdaQueryWrapper<HealthWarningThreshold>().eq(HealthWarningThreshold::getElderlyId, fromId)
+                new LambdaQueryWrapper<HealthWarningThreshold>().eq(HealthWarningThreshold::getElderlyId, fromId)
         );
         List<HealthWarningThreshold> toThresholds = healthWarningThresholdMapper.selectList(
-            new LambdaQueryWrapper<HealthWarningThreshold>().eq(HealthWarningThreshold::getElderlyId, toId)
+                new LambdaQueryWrapper<HealthWarningThreshold>().eq(HealthWarningThreshold::getElderlyId, toId)
         );
 
         Set<String> toIndicators = toThresholds.stream()
-            .map(HealthWarningThreshold::getIndicatorType)
-            .collect(Collectors.toSet());
+                .map(HealthWarningThreshold::getIndicatorType)
+                .collect(Collectors.toSet());
 
         for (HealthWarningThreshold threshold : fromThresholds) {
             if (!toIndicators.contains(threshold.getIndicatorType())) {
@@ -460,7 +643,7 @@ public class ElderlyMergeService {
         }
 
         healthWarningThresholdMapper.delete(new LambdaQueryWrapper<HealthWarningThreshold>()
-            .eq(HealthWarningThreshold::getElderlyId, fromId));
+                .eq(HealthWarningThreshold::getElderlyId, fromId));
     }
 
     private static class MatchResult {

@@ -5,15 +5,12 @@ import lombok.Data;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
-import java.util.Map;
 
 @Data
-public class ElderlyMergeDTO {
+public class MergePreviewRequestDTO {
     @NotNull(message = "主档案ID不能为空")
     private Integer primaryElderlyId;
 
     @NotEmpty(message = "被合并档案ID不能为空")
     private List<Integer> mergedElderlyIds;
-
-    private Map<String, Object> fieldOverrides;
 }

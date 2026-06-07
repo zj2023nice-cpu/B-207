@@ -451,38 +451,34 @@
       </div>
 
       <div v-if="mergeStep === 2">
-        <el-alert title="请为每个冲突字段选择保留哪个值" type="warning" :closable="false" style="margin-bottom: 16px;" />
+        <el-alert title="请为每个冲突字段选择最终保留值" type="warning" :closable="false" style="margin-bottom: 16px;" />
         <div v-if="!mergePreview?.conflictFields || mergePreview.conflictFields.length === 0">
-          <el-result icon="success" title="无冲突字段" sub-title="两个档案的所有字段都一致，可以直接合并" />
+          <el-result icon="success" title="无冲突字段" sub-title="这组档案的字段内容一致，可以直接合并" />
         </div>
         <el-table v-else :data="mergePreview.conflictFields" border>
           <el-table-column label="字段" prop="fieldLabel" width="150" />
-          <el-table-column label="主档案值" width="280">
+          <el-table-column label="候选值">
             <template #default="scope">
-              <el-radio 
-                :model-value="fieldSelections[scope.row.fieldName]" 
-                value="primary"
-                @change="fieldSelections[scope.row.fieldName] = 'primary'"
-              >
-                {{ getFieldDisplayValue(scope.row.primaryValue) }}
-                <el-tag v-if="scope.row.recommendedValue === scope.row.primaryValue" size="small" type="success" style="margin-left: 8px;">
-                  推荐
-                </el-tag>
-              </el-radio>
-            </template>
-          </el-table-column>
-          <el-table-column label="被合并档案值">
-            <template #default="scope">
-              <el-radio 
-                :model-value="fieldSelections[scope.row.fieldName]" 
-                value="merged"
-                @change="fieldSelections[scope.row.fieldName] = 'merged'"
-              >
-                {{ getFieldDisplayValue(scope.row.mergedValue) }}
-                <el-tag v-if="scope.row.recommendedValue === scope.row.mergedValue" size="small" type="success" style="margin-left: 8px;">
-                  推荐
-                </el-tag>
-              </el-radio>
+              <el-radio-group v-model="fieldSelections[scope.row.fieldName]" class="merge-option-group">
+                <el-radio
+                  v-for="option in scope.row.options"
+                  :key="option.optionKey"
+                  :value="option.optionKey"
+                  class="merge-option-radio"
+                >
+                  <div class="merge-option-content">
+                    <div>
+                      {{ getFieldDisplayValue(option.value) }}
+                      <el-tag v-if="option.recommended" size="small" type="success" style="margin-left: 8px;">
+                        推荐
+                      </el-tag>
+                    </div>
+                    <div class="merge-option-source">
+                      来源：{{ option.sourceLabels.join('、') }}
+                    </div>
+                  </div>
+                </el-radio>
+              </el-radio-group>
             </template>
           </el-table-column>
         </el-table>
@@ -490,9 +486,18 @@
 
       <div v-if="mergeStep === 3">
         <el-alert title="合并确认" type="warning" :closable="false" style="margin-bottom: 16px;">
-          <div>合并后，被合并档案将标记为"已合并"状态，所有关联数据将迁移到主档案。此操作不可撤销。</div>
+          <div>合并后，所有副档案都会标记为已合并，关联数据统一迁移到主档案。此操作不可撤销。</div>
         </el-alert>
-        
+
+        <el-descriptions :column="1" border style="margin-bottom: 16px;">
+          <el-descriptions-item label="主档案">
+            {{ getPrimaryElderly()?.name }} (ID: {{ selectedPrimaryId }})
+          </el-descriptions-item>
+          <el-descriptions-item label="被合并档案">
+            {{ getMergedCandidates().map(item => `${item.name}(ID:${item.id})`).join('、') }}
+          </el-descriptions-item>
+        </el-descriptions>
+
         <h4 style="margin-bottom: 12px;">将迁移以下关联数据：</h4>
         <el-row :gutter="12">
           <el-col :span="6" v-for="(count, type) in mergePreview?.relatedDataCounts" :key="type">
@@ -508,10 +513,12 @@
           <el-table-column label="字段" prop="fieldLabel" width="150" />
           <el-table-column label="最终选择值">
             <template #default="scope">
-              <el-tag :type="fieldSelections[scope.row.fieldName] === 'primary' ? 'primary' : 'success'">
-                {{ fieldSelections[scope.row.fieldName] === 'primary' ? '主档案：' : '被合并：' }}
-                {{ getFieldDisplayValue(fieldSelections[scope.row.fieldName] === 'primary' ? scope.row.primaryValue : scope.row.mergedValue) }}
+              <el-tag type="success">
+                {{ getFieldDisplayValue(getSelectedOption(scope.row)?.value) }}
               </el-tag>
+              <div v-if="getSelectedOption(scope.row)?.sourceLabels?.length" class="merge-option-source" style="margin-top: 6px;">
+                来源：{{ getSelectedOption(scope.row).sourceLabels.join('、') }}
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -981,6 +988,21 @@ const detectDuplicates = async () => {
   }
 }
 
+const getPrimaryElderly = () => {
+  return currentGroup.value?.elderlyList?.find(item => item.id === selectedPrimaryId.value) || null
+}
+
+const getMergedCandidates = () => {
+  return currentGroup.value?.elderlyList?.filter(item => item.id !== selectedPrimaryId.value) || []
+}
+
+const getSelectedOption = (field) => {
+  if (!field?.options?.length) {
+    return null
+  }
+  return field.options.find(option => option.optionKey === fieldSelections.value[field.fieldName]) || field.options[0]
+}
+
 const startMergeWizard = (group) => {
   currentGroup.value = group
   mergeStep.value = 1
@@ -1011,20 +1033,24 @@ const nextStep = async () => {
 }
 
 const loadMergePreview = async () => {
-  const mergedId = currentGroup.value.elderlyList.find(e => e.id !== selectedPrimaryId.value)?.id
-  if (!mergedId) return
+  const mergedIds = getMergedCandidates().map(item => item.id)
+  if (mergedIds.length === 0) {
+    ElMessage.warning('当前重复组没有可合并的副档案')
+    return
+  }
   try {
-    const res = await request.get('/elderly/merge/preview', {
-      params: {
-        primaryId: selectedPrimaryId.value,
-        mergedId: mergedId
-      }
+    const res = await request.post('/elderly/merge/preview', {
+      primaryElderlyId: selectedPrimaryId.value,
+      mergedElderlyIds: mergedIds
     })
     mergePreview.value = res.data
     fieldSelections.value = {}
     if (res.data.conflictFields) {
       res.data.conflictFields.forEach(field => {
-        fieldSelections.value[field.fieldName] = 'primary'
+        const recommended = field.options?.find(option => option.recommended) || field.options?.[0]
+        if (recommended) {
+          fieldSelections.value[field.fieldName] = recommended.optionKey
+        }
       })
     }
   } catch (error) {
@@ -1041,15 +1067,23 @@ const getFieldDisplayValue = (value) => {
 }
 
 const confirmMerge = async () => {
-  const mergedId = currentGroup.value.elderlyList.find(e => e.id !== selectedPrimaryId.value)?.id
-  if (!mergedId) return
+  const mergedIds = getMergedCandidates().map(item => item.id)
+  if (mergedIds.length === 0) {
+    ElMessage.warning('当前重复组没有可合并的副档案')
+    return
+  }
 
   const fieldOverrides = {}
   if (mergePreview.value && mergePreview.value.conflictFields) {
     mergePreview.value.conflictFields.forEach(field => {
-      const selection = fieldSelections.value[field.fieldName]
-      if (selection === 'merged') {
-        fieldOverrides[field.fieldName] = field.mergedValue
+      const selectedOption = getSelectedOption(field)
+      if (!selectedOption) {
+        return
+      }
+      const primaryValue = getFieldDisplayValue(field.primaryValue)
+      const selectedValue = getFieldDisplayValue(selectedOption.value)
+      if (primaryValue !== selectedValue) {
+        fieldOverrides[field.fieldName] = selectedOption.value
       }
     })
   }
@@ -1058,12 +1092,14 @@ const confirmMerge = async () => {
   try {
     await request.post('/elderly/merge', {
       primaryElderlyId: selectedPrimaryId.value,
-      mergedElderlyId: mergedId,
+      mergedElderlyIds: mergedIds,
       fieldOverrides: fieldOverrides
     })
     ElMessage.success('合并成功')
     mergeWizardVisible.value = false
-    loadData()
+    duplicateDialogVisible.value = true
+    await loadData()
+    await detectDuplicates()
   } catch (error) {
     console.error(error)
     ElMessage.error('合并失败：' + (error.response?.data?.message || error.message))
@@ -1115,5 +1151,28 @@ const cancelMerge = () => {
 .tag-manage {
   max-height: 400px;
   overflow-y: auto;
+}
+
+.merge-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.merge-option-radio {
+  display: flex;
+  align-items: flex-start;
+  margin-right: 0;
+}
+
+.merge-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.merge-option-source {
+  color: #909399;
+  font-size: 12px;
 }
 </style>

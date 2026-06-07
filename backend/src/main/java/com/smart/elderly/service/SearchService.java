@@ -84,11 +84,12 @@ public class SearchService {
 
     private List<SearchResultItemVO> searchElderly(String keyword, Integer limit) {
         LambdaQueryWrapper<Elderly> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(Elderly::getName, keyword)
-                .or().like(Elderly::getPhone, keyword)
-                .or().like(Elderly::getAddress, keyword)
-                .or().like(Elderly::getEmergencyContactName, keyword)
-                .or().like(Elderly::getEmergencyContactPhone, keyword)
+        wrapper.isNull(Elderly::getMergedToId)
+                .and(w -> w.like(Elderly::getName, keyword)
+                        .or().like(Elderly::getPhone, keyword)
+                        .or().like(Elderly::getAddress, keyword)
+                        .or().like(Elderly::getEmergencyContactName, keyword)
+                        .or().like(Elderly::getEmergencyContactPhone, keyword))
                 .orderByDesc(Elderly::getUpdatedAt)
                 .last(limit != null ? "LIMIT " + limit : "");
 
