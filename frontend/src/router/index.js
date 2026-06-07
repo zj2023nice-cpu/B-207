@@ -99,13 +99,6 @@ router.beforeEach((to, from, next) => {
         next('/login')
         return
     }
-    if (to.path.startsWith('/system-announcement-admin')) {
-        const user = JSON.parse(userStr)
-        if (!user.role || user.role.toLowerCase() !== 'admin') {
-            next('/system-announcement')
-            return
-        }
-    }
     next()
 })
 

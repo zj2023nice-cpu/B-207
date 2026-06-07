@@ -128,13 +128,22 @@ const goToNotification = () => {
   router.push('/notification')
 }
 
-onMounted(() => {
-  const userStr = localStorage.getItem('user')
-  if (userStr) {
-    const user = JSON.parse(userStr)
-    username.value = user.username
-    isAdmin.value = user.role && user.role.toLowerCase() === 'admin'
+const loadCurrentUser = async () => {
+  try {
+    const res = await request.get('/users/current')
+    if (res.data) {
+      username.value = res.data.username
+      isAdmin.value = res.data.role && res.data.role.toLowerCase() === 'admin'
+      localStorage.setItem('user', JSON.stringify(res.data))
+    }
+  } catch (e) {
+    localStorage.removeItem('user')
+    router.push('/login')
   }
+}
+
+onMounted(() => {
+  loadCurrentUser()
   
   loadUnreadCount()
   loadAnnouncementUnreadCount()
@@ -150,8 +159,13 @@ onUnmounted(() => {
   }
 })
 
-const handleCommand = (command) => {
+const handleCommand = async (command) => {
   if (command === 'logout') {
+    try {
+      await request.post('/users/logout')
+    } catch (e) {
+      console.error('登出失败', e)
+    }
     localStorage.removeItem('user')
     router.push('/login')
   }

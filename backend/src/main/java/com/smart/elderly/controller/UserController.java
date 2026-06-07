@@ -9,13 +9,18 @@ import com.smart.elderly.service.LoginAttemptService;
 import com.smart.elderly.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import javax.validation.Valid;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+
+    private static final String SESSION_USER_KEY = "LOGIN_USER";
 
     @Autowired
     private UserService userService;
@@ -34,7 +39,7 @@ public class UserController {
 
     @OperationLog(operation = "用户登录", description = "用户登录系统")
     @PostMapping("/login")
-    public Result<User> login(@Valid @RequestBody LoginRequest request) {
+    public Result<Map<String, Object>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         String username = request.getUsername();
         String password = request.getPassword();
 
@@ -56,8 +61,17 @@ public class UserController {
         User dbUser = userService.login(username, password);
         if (dbUser != null) {
             loginAttemptService.resetAttempts(username);
-            dbUser.setPassword(null);
-            return Result.success(dbUser);
+            
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute(SESSION_USER_KEY, dbUser);
+            session.setMaxInactiveInterval(3600 * 24);
+
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", dbUser.getId());
+            userInfo.put("username", dbUser.getUsername());
+            userInfo.put("role", dbUser.getRole());
+            
+            return Result.success(userInfo);
         }
 
         loginAttemptService.recordFailedAttempt(username);
@@ -73,6 +87,32 @@ public class UserController {
         }
     }
 
+    @GetMapping("/current")
+    public Result<Map<String, Object>> getCurrentUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return Result.error("用户未登录");
+        }
+        User user = (User) session.getAttribute(SESSION_USER_KEY);
+        if (user == null) {
+            return Result.error("用户未登录");
+        }
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("id", user.getId());
+        userInfo.put("username", user.getUsername());
+        userInfo.put("role", user.getRole());
+        return Result.success(userInfo);
+    }
+
+    @PostMapping("/logout")
+    public Result<String> logout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        return Result.success("退出成功");
+    }
+
     @OperationLog(operation = "用户注册", description = "用户注册新账号")
     @PostMapping("/register")
     public Result<String> register(@Valid @RequestBody User user) {
@@ -81,6 +121,9 @@ public class UserController {
                         .eq(User::getUsername, user.getUsername()));
         if (existingUser != null) {
             return Result.error("该用户名已被注册");
+        }
+        if (user.getRole() == null || user.getRole().isEmpty()) {
+            user.setRole("user");
         }
         userService.register(user);
         return Result.success("注册成功");

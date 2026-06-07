@@ -1,27 +1,15 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import router from '../router'
 
 const service = axios.create({
     baseURL: '/api',
-    timeout: 5000
+    timeout: 5000,
+    withCredentials: true
 })
 
 service.interceptors.request.use(
     config => {
-        const userStr = localStorage.getItem('user')
-        if (userStr) {
-            try {
-                const user = JSON.parse(userStr)
-                if (user.id) {
-                    config.headers['X-User-Id'] = user.id
-                }
-                if (user.username) {
-                    config.headers['X-Username'] = user.username
-                }
-            } catch (e) {
-                console.error('解析用户信息失败', e)
-            }
-        }
         return config
     },
     error => {
@@ -35,12 +23,22 @@ service.interceptors.response.use(
         const res = response.data
         if (res.code !== 200) {
             ElMessage.error(res.message || 'Error')
+            if (res.message && (res.message.includes('未登录') || res.message.includes('登录已过期'))) {
+                localStorage.removeItem('user')
+                router.push('/login')
+            }
             return Promise.reject(new Error(res.message || 'Error'))
         } else {
             return res
         }
     },
     error => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('user')
+            ElMessage.error('登录已过期，请重新登录')
+            router.push('/login')
+            return Promise.reject(error)
+        }
         ElMessage.error(error.message)
         return Promise.reject(error)
     }

@@ -1,5 +1,6 @@
 package com.smart.elderly.common;
 
+import com.smart.elderly.interceptor.AuthInterceptor;
 import com.smart.elderly.interceptor.UserContextInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Autowired
     private UserContextInterceptor userContextInterceptor;
 
+    @Autowired
+    private AuthInterceptor authInterceptor;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
@@ -25,8 +29,18 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(authInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns(
+                    "/api/users/login", 
+                    "/api/users/register", 
+                    "/api/users/captcha"
+                )
+                .order(0);
+
         registry.addInterceptor(userContextInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/users/login", "/api/users/register", "/api/users/captcha");
+                .excludePathPatterns("/api/users/login", "/api/users/register", "/api/users/captcha")
+                .order(1);
     }
 }

@@ -133,8 +133,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+
+const router = useRouter()
 
 const loading = ref(false)
 const tableData = ref([])
@@ -180,6 +183,10 @@ const loadData = async () => {
     })
     tableData.value = res.data?.records || []
     total.value = res.data?.total || 0
+  } catch (e) {
+    if (e.message && e.message.includes('无管理员权限')) {
+      router.push('/system-announcement')
+    }
   } finally {
     loading.value = false
   }
