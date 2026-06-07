@@ -19,6 +19,12 @@ const routes = [
                 meta: { title: '老人管理' }
             },
             {
+                path: 'elderly-follow',
+                name: 'ElderlyFollow',
+                component: () => import('../views/ElderlyFollow.vue'),
+                meta: { title: '重点关注' }
+            },
+            {
                 path: 'health',
                 name: 'Health',
                 component: () => import('../views/Health.vue'),

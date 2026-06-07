@@ -15,6 +15,10 @@
             <el-icon><User /></el-icon>
             <span>老人管理</span>
           </el-menu-item>
+          <el-menu-item index="/elderly-follow">
+            <el-icon><StarFilled /></el-icon>
+            <span>重点关注</span>
+          </el-menu-item>
           <el-menu-item index="/elderly-tag">
             <el-icon><PriceTag /></el-icon>
             <span>标签管理</span>

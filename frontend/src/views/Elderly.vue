@@ -75,8 +75,15 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="380">
+        <el-table-column label="操作" width="460">
           <template #default="scope">
+            <el-button 
+              size="small" 
+              :type="followedMap[scope.row.elderly.id] ? 'info' : 'success'" 
+              @click="handleToggleFollow(scope.row.elderly)"
+            >
+              {{ followedMap[scope.row.elderly.id] ? '已关注' : '关注' }}
+            </el-button>
             <el-button size="small" @click="handleView(scope.row)">查看</el-button>
             <el-button size="small" @click="handleEdit(scope.row.elderly)">编辑</el-button>
             <el-button size="small" type="warning" @click="handleManageTags(scope.row.elderly)">管理标签</el-button>
@@ -165,6 +172,14 @@
 
     <el-dialog v-model="detailVisible" title="老人详情" width="600px">
       <div v-if="currentDetail" class="detail-content">
+        <div style="margin-bottom: 16px;">
+          <el-button 
+            :type="followedMap[currentDetail.elderly.id] ? 'info' : 'success'" 
+            @click="handleToggleFollow(currentDetail.elderly)"
+          >
+            {{ followedMap[currentDetail.elderly.id] ? '取消关注' : '+ 关注' }}
+          </el-button>
+        </div>
         <el-descriptions :column="2" border>
           <el-descriptions-item label="姓名">{{ currentDetail.elderly.name }}</el-descriptions-item>
           <el-descriptions-item label="年龄">{{ currentDetail.elderly.age }}</el-descriptions-item>
@@ -261,6 +276,7 @@ const selectedTagIds = ref([])
 const originalTagIds = ref([])
 const isBatch = ref(false)
 const actionType = ref('bind')
+const followedMap = ref({})
 
 const form = ref({
   id: null,
@@ -319,10 +335,36 @@ const loadData = async () => {
       }
     })
     tableData.value = res.data
+    await loadFollowedMap()
   } catch (error) {
     console.error(error)
   } finally {
     loading.value = false
+  }
+}
+
+const loadFollowedMap = async () => {
+  try {
+    const res = await request.get('/elderly-follow/map')
+    followedMap.value = res.data || {}
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const handleToggleFollow = async (elderly) => {
+  try {
+    if (followedMap.value[elderly.id]) {
+      await request.post(`/elderly-follow/unfollow/${elderly.id}`)
+      ElMessage.success('已取消关注')
+    } else {
+      await request.post(`/elderly-follow/follow/${elderly.id}`)
+      ElMessage.success('关注成功')
+    }
+    await loadFollowedMap()
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('操作失败')
   }
 }
 
