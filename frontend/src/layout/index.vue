@@ -11,6 +11,10 @@
           active-text-color="#409EFF"
         >
           <div class="logo">智慧养老系统</div>
+          <el-menu-item index="/dashboard">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>总览</span>
+          </el-menu-item>
           <el-menu-item index="/elderly">
             <el-icon><User /></el-icon>
             <span>老人管理</span>

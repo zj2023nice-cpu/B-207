@@ -10,8 +10,14 @@ const routes = [
     {
         path: '/',
         component: Layout,
-        redirect: '/elderly',
+        redirect: '/dashboard',
         children: [
+            {
+                path: 'dashboard',
+                name: 'Dashboard',
+                component: () => import('../views/Dashboard.vue'),
+                meta: { title: '总览' }
+            },
             {
                 path: 'elderly',
                 name: 'Elderly',
