@@ -35,6 +35,9 @@ public class WarningRecordExportProvider extends BaseExportProvider<WarningRecor
         STATUS_MAP.put("PENDING", "待处理");
         STATUS_MAP.put("READ", "已读");
         STATUS_MAP.put("HANDLED", "已处理");
+        STATUS_MAP.put("IGNORED", "已忽略");
+        STATUS_MAP.put("REOPENED", "重新打开");
+        STATUS_MAP.put("ESCALATED", "升级处理");
     }
 
     @Override
