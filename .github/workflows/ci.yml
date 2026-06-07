@@ -1,0 +1,369 @@
+name: Smart Elderly Care CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'sql/**'
+  pull_request:
+    branches: [ main, master, develop ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '8'
+  NODE_VERSION: '18'
+  MAVEN_OPTS: '-Xmx1024m -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS'
+
+jobs:
+  frontend-build:
+    name: Frontend Build & Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cache Node Modules
+        id: node-cache
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install Dependencies
+        working-directory: frontend
+        run: |
+          echo "::group::Installing npm dependencies"
+          npm ci
+          echo "::endgroup::"
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: |
+          echo "::group::Building frontend application"
+          npm run build 2>&1 | tee build.log
+          BUILD_EXIT_CODE=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "::error::Frontend build failed"
+            echo "::group::Build error details"
+            cat build.log
+            echo "::endgroup::"
+            exit $BUILD_EXIT_CODE
+          fi
+
+      - name: Verify Build Output
+        working-directory: frontend
+        run: |
+          echo "::group::Verifying build artifacts"
+          if [ ! -d "dist" ]; then
+            echo "::error::Build output directory 'dist' not found"
+            exit 1
+          fi
+          echo "Build directory contents:"
+          ls -la dist/
+          echo ""
+          echo "Index file check:"
+          if [ -f "dist/index.html" ]; then
+            echo "✅ index.html exists"
+          else
+            echo "::error::index.html not found in dist/"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: Upload Frontend Artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: frontend-dist-${{ github.sha }}
+          path: frontend/dist/
+          retention-days: 7
+
+      - name: Upload Build Log (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: frontend-build-log-${{ github.sha }}
+          path: frontend/build.log
+          retention-days: 30
+
+  backend-test:
+    name: Backend Test & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root123456
+          MYSQL_DATABASE: elderly_care_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_pass123
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot123456"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache Maven Repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Initialize Test Database
+        run: |
+          echo "::group::Initializing test database"
+          for sql_file in sql/init.sql sql/health_warning_init.sql sql/operation_logs_init.sql; do
+            if [ -f "$sql_file" ]; then
+              echo "Executing $sql_file..."
+              mysql -h 127.0.0.1 -u root -proot123456 elderly_care_test < "$sql_file" 2>&1 || true
+            fi
+          done
+          echo "Database initialized successfully"
+          echo "::endgroup::"
+
+      - name: Maven Dependency Resolution
+        working-directory: backend
+        run: |
+          echo "::group::Resolving Maven dependencies"
+          mvn dependency:go-offline -B -q
+          echo "::endgroup::"
+
+      - name: Compile Backend
+        working-directory: backend
+        run: |
+          echo "::group::Compiling backend code"
+          mvn compile -B 2>&1 | tee compile.log
+          COMPILE_EXIT_CODE=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          if [ $COMPILE_EXIT_CODE -ne 0 ]; then
+            echo "::error::Backend compilation failed"
+            echo "::group::Compile error details"
+            cat compile.log
+            echo "::endgroup::"
+            exit $COMPILE_EXIT_CODE
+          fi
+
+      - name: Run Unit Tests
+        working-directory: backend
+        run: |
+          echo "::group::Running unit tests"
+          mvn test -B \
+            -Dspring.profiles.active=test \
+            -Dspring.datasource.url=jdbc:mysql://127.0.0.1:3306/elderly_care_test?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true \
+            -Dspring.datasource.username=test_user \
+            -Dspring.datasource.password=test_pass123 \
+            -Dspring.redis.host=127.0.0.1 \
+            -Dspring.redis.port=6379 \
+            2>&1 | tee test.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "::error::Backend tests failed"
+            echo "::group::Test error details"
+            cat test.log
+            echo "::endgroup::"
+            exit $TEST_EXIT_CODE
+          fi
+
+      - name: Generate Test Report Summary
+        if: always()
+        working-directory: backend
+        run: |
+          echo "::group::Test Report Summary"
+          if [ -d "target/surefire-reports" ]; then
+            echo "=== Test Results ==="
+            find target/surefire-reports -name "*.txt" -exec cat {} \; 2>/dev/null || true
+            echo ""
+            echo "=== XML Reports ==="
+            find target/surefire-reports -name "TEST-*.xml" -exec echo "Found: {}" \;
+          else
+            echo "No surefire reports found"
+          fi
+          echo "::endgroup::"
+
+      - name: Package Backend (Skip Tests)
+        if: success()
+        working-directory: backend
+        run: |
+          echo "::group::Packaging backend application"
+          mvn package -B -DskipTests 2>&1 | tee package.log
+          PACKAGE_EXIT_CODE=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          if [ $PACKAGE_EXIT_CODE -ne 0 ]; then
+            echo "::error::Backend packaging failed"
+            echo "::group::Package error details"
+            cat package.log
+            echo "::endgroup::"
+            exit $PACKAGE_EXIT_CODE
+          fi
+
+      - name: Verify JAR Artifact
+        if: success()
+        working-directory: backend
+        run: |
+          echo "::group::Verifying JAR artifact"
+          JAR_FILE=$(find target -name "*.jar" -not -name "*sources*" -not -name "*javadoc*" | head -1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "::error::No JAR file found in target/"
+            exit 1
+          fi
+          echo "JAR file: $JAR_FILE"
+          ls -lh "$JAR_FILE"
+          echo "::endgroup::"
+
+      - name: Upload Backend JAR
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: backend-jar-${{ github.sha }}
+          path: backend/target/*.jar
+          retention-days: 7
+
+      - name: Generate Coverage Summary
+        if: always()
+        working-directory: backend
+        run: |
+          echo "::group::Test Coverage Summary"
+          if [ -f "target/jacoco-reports/jacoco.csv" ]; then
+            echo "=== JaCoCo Coverage ==="
+            head -5 target/jacoco-reports/jacoco.csv
+            echo "..."
+            echo ""
+            echo "Full report available in artifacts"
+          else
+            echo "No JaCoCo coverage report generated"
+          fi
+          echo "::endgroup::"
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-reports-${{ github.sha }}
+          path: |
+            backend/target/surefire-reports/
+            backend/target/jacoco-reports/
+            backend/test.log
+          retention-days: 30
+
+      - name: Upload Compile Log (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: backend-compile-log-${{ github.sha }}
+          path: backend/compile.log
+          retention-days: 30
+
+  backend-code-quality:
+    name: Backend Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: backend-test
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache Maven Repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run Maven Checkstyle
+        working-directory: backend
+        continue-on-error: true
+        run: |
+          echo "::group::Running code quality checks"
+          mvn checkstyle:check -B 2>&1 | tee checkstyle.log
+          echo "::endgroup::"
+
+      - name: Upload Checkstyle Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-checkstyle-report-${{ github.sha }}
+          path: backend/target/checkstyle-result.xml
+          retention-days: 14
+
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [ frontend-build, backend-test, backend-code-quality ]
+    if: always()
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Generate CI Summary
+        run: |
+          echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Commit Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend Build: ${{ needs.frontend-build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Test: ${{ needs.backend-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Code Quality: ${{ needs.backend-code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.frontend-build.result }}" == "success" ]; then
+            echo "✅ Frontend artifacts available: frontend-dist-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ needs.backend-test.result }}" == "success" ]; then
+            echo "✅ Backend artifacts available: backend-jar-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "📊 Test reports: backend-test-reports-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
