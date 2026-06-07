@@ -51,7 +51,7 @@ public class UserController {
         String password = request.getPassword();
 
         if (loginAttemptService.isLocked(username)) {
-            return Result.error("账户已被锁定，请15分钟后再试");
+            return Result.error("账户已被锁定，请" + SecurityConstants.DEFAULT_LOCK_DURATION_MINUTES + "分钟后再试");
         }
 
         boolean needsCaptcha = loginAttemptService.requiresCaptcha(username);
@@ -95,7 +95,7 @@ public class UserController {
             }
             return Result.error("用户名或密码错误，剩余" + remaining + "次机会");
         } else {
-            return Result.error("登录失败次数过多，账户已被锁定15分钟");
+            return Result.error("登录失败次数过多，账户已被锁定" + SecurityConstants.DEFAULT_LOCK_DURATION_MINUTES + "分钟");
         }
     }
 
@@ -199,7 +199,7 @@ public class UserController {
             return Result.error("该用户名已被注册");
         }
         if (user.getRole() == null || user.getRole().isEmpty()) {
-            user.setRole("user");
+            user.setRole(SecurityConstants.ROLE_USER);
         }
         userService.register(user);
         return Result.success("注册成功");

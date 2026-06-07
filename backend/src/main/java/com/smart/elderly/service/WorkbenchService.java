@@ -13,6 +13,7 @@ import com.smart.elderly.enums.NotificationStatus;
 import com.smart.elderly.enums.PriorityLevel;
 import com.smart.elderly.enums.WarningFollowupTaskStatus;
 import com.smart.elderly.enums.HealthWarningStatus;
+import com.smart.elderly.enums.WarningLevel;
 import com.smart.elderly.mapper.ElderlyMapper;
 import com.smart.elderly.mapper.HealthRecordMapper;
 import com.smart.elderly.mapper.HealthWarningRecordMapper;
@@ -171,12 +172,7 @@ public class WorkbenchService {
             return Collections.emptyList();
         }
 
-        List<String> pendingStatuses = Arrays.asList(
-                HealthWarningStatus.PENDING.getCode(),
-                HealthWarningStatus.READ.getCode(),
-                HealthWarningStatus.REOPENED.getCode(),
-                HealthWarningStatus.ESCALATED.getCode()
-        );
+        List<String> pendingStatuses = HealthWarningStatus.getPendingStatusCodes();
 
         LambdaQueryWrapper<HealthWarningRecord> wrapper = new LambdaQueryWrapper<HealthWarningRecord>();
         wrapper.in(HealthWarningRecord::getStatus, pendingStatuses);
@@ -362,19 +358,7 @@ public class WorkbenchService {
         if (warningLevel == null) {
             return SCORE_LEVEL_MEDIUM;
         }
-        switch (warningLevel.toUpperCase()) {
-            case "HIGH":
-            case "严重":
-                return SCORE_LEVEL_HIGH;
-            case "MEDIUM":
-            case "中等":
-                return SCORE_LEVEL_MEDIUM;
-            case "LOW":
-            case "轻微":
-                return SCORE_LEVEL_LOW;
-            default:
-                return SCORE_LEVEL_MEDIUM;
-        }
+        return WarningLevel.fromCode(warningLevel).getScore();
     }
 
     private int calculateAbnormalSeverity(HealthRecord record) {
@@ -540,11 +524,7 @@ public class WorkbenchService {
             return Collections.emptyList();
         }
 
-        List<String> activeStatuses = Arrays.asList(
-                WarningFollowupTaskStatus.PENDING.getCode(),
-                WarningFollowupTaskStatus.IN_PROGRESS.getCode(),
-                WarningFollowupTaskStatus.OVERDUE.getCode()
-        );
+        List<String> activeStatuses = WarningFollowupTaskStatus.getActiveStatusCodes();
 
         LambdaQueryWrapper<WarningFollowupTask> wrapper = new LambdaQueryWrapper<WarningFollowupTask>();
         wrapper.in(WarningFollowupTask::getStatus, activeStatuses);

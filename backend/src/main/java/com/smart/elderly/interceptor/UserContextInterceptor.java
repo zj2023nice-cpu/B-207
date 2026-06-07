@@ -1,5 +1,6 @@
 package com.smart.elderly.interceptor;
 
+import com.smart.elderly.common.SecurityConstants;
 import com.smart.elderly.context.UserContextHolder;
 import com.smart.elderly.entity.User;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,7 @@ import javax.servlet.http.HttpSession;
 @Component
 public class UserContextInterceptor implements HandlerInterceptor {
 
-    private static final String SESSION_USER_KEY = "LOGIN_USER";
+    private static final String SESSION_USER_KEY = SecurityConstants.SESSION_USER_KEY;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {

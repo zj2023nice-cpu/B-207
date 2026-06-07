@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smart.elderly.entity.Elderly;
 import com.smart.elderly.entity.HealthRecord;
 import com.smart.elderly.entity.HealthWarningThreshold;
+import com.smart.elderly.enums.WarningLevel;
 import com.smart.elderly.mapper.HealthRecordMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -74,7 +75,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "temperature", 
                         record.getTemperature(), threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderly.getName() + reason));
+                        WarningLevel.HIGH.getCode(), "老人" + elderly.getName() + reason));
                 }
             }
         }
@@ -90,7 +91,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "systolicPressure", 
                         actualValue, threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderly.getName() + reason));
+                        WarningLevel.HIGH.getCode(), "老人" + elderly.getName() + reason));
                 } else if (threshold.getLowThreshold() != null && 
                     actualValue.compareTo(threshold.getLowThreshold()) < 0) {
                     isAbnormal = true;
@@ -98,7 +99,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "systolicPressure", 
                         actualValue, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderly.getName() + reason));
+                        WarningLevel.LOW.getCode(), "老人" + elderly.getName() + reason));
                 }
             }
         }
@@ -114,7 +115,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "diastolicPressure", 
                         actualValue, threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderly.getName() + reason));
+                        WarningLevel.HIGH.getCode(), "老人" + elderly.getName() + reason));
                 } else if (threshold.getLowThreshold() != null && 
                     actualValue.compareTo(threshold.getLowThreshold()) < 0) {
                     isAbnormal = true;
@@ -122,7 +123,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "diastolicPressure", 
                         actualValue, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderly.getName() + reason));
+                        WarningLevel.LOW.getCode(), "老人" + elderly.getName() + reason));
                 }
             }
         }
@@ -138,7 +139,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "heartRate", 
                         actualValue, threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderly.getName() + reason));
+                        WarningLevel.HIGH.getCode(), "老人" + elderly.getName() + reason));
                 } else if (threshold.getLowThreshold() != null && 
                     actualValue.compareTo(threshold.getLowThreshold()) < 0) {
                     isAbnormal = true;
@@ -146,7 +147,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "heartRate", 
                         actualValue, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderly.getName() + reason));
+                        WarningLevel.LOW.getCode(), "老人" + elderly.getName() + reason));
                 }
             }
         }
@@ -162,7 +163,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "bloodOxygen", 
                         actualValue, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderly.getName() + reason));
+                        WarningLevel.LOW.getCode(), "老人" + elderly.getName() + reason));
                 }
             }
         }
@@ -177,7 +178,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "bloodSugar", 
                         record.getBloodSugar(), threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderly.getName() + reason));
+                        WarningLevel.HIGH.getCode(), "老人" + elderly.getName() + reason));
                 } else if (threshold.getLowThreshold() != null && 
                     record.getBloodSugar().compareTo(threshold.getLowThreshold()) < 0) {
                     isAbnormal = true;
@@ -185,7 +186,7 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
                     abnormalReasons.add(reason);
                     pendingWarnings.add(new WarningInfo(elderlyId, "bloodSugar", 
                         record.getBloodSugar(), threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderly.getName() + reason));
+                        WarningLevel.LOW.getCode(), "老人" + elderly.getName() + reason));
                 }
             }
         }

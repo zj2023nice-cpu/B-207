@@ -80,4 +80,12 @@ public enum WarningFollowupTaskStatus {
     public boolean canTransitionTo(WarningFollowupTaskStatus target) {
         return getAllowedTransitions().contains(target);
     }
+
+    public static List<String> getActiveStatusCodes() {
+        return Arrays.asList(PENDING.getCode(), IN_PROGRESS.getCode(), OVERDUE.getCode());
+    }
+
+    public boolean isActive() {
+        return this == PENDING || this == IN_PROGRESS || this == OVERDUE;
+    }
 }

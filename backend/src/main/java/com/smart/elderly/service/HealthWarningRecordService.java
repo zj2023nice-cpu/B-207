@@ -194,27 +194,10 @@ public class HealthWarningRecordService extends ServiceImpl<HealthWarningRecordM
         
         this.updateById(record);
         
-        String actionType = getActionType(targetStatus);
+        String actionType = targetStatus.getActionType();
         addTimeline(id, actionType, fromStatus, targetStatus.getCode(), operator, remark);
-        
-        return true;
-    }
 
-    private String getActionType(HealthWarningStatus status) {
-        switch (status) {
-            case READ:
-                return "READ";
-            case HANDLED:
-                return "HANDLE";
-            case IGNORED:
-                return "IGNORE";
-            case REOPENED:
-                return "REOPEN";
-            case ESCALATED:
-                return "ESCALATE";
-            default:
-                return "UPDATE";
-        }
+        return true;
     }
 
     private void addTimeline(Integer warningRecordId, String actionType, 

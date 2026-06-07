@@ -50,7 +50,7 @@ public class UserSessionService extends ServiceImpl<UserSessionMapper, UserSessi
 
         this.save(userSession);
 
-        session.setAttribute("USER_SESSION_ID", userSession.getId());
+        session.setAttribute(SecurityConstants.USER_SESSION_ID_KEY, userSession.getId());
 
         return sessionId;
     }

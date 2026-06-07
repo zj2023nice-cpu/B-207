@@ -7,6 +7,8 @@ import com.smart.elderly.dto.ShiftHandoverCreateDTO;
 import com.smart.elderly.entity.HealthWarningRecord;
 import com.smart.elderly.entity.ShiftHandoverRecord;
 import com.smart.elderly.entity.ShiftHandoverWarningRelation;
+import com.smart.elderly.enums.HealthWarningStatus;
+import com.smart.elderly.enums.WarningLevel;
 import com.smart.elderly.mapper.ShiftHandoverRecordMapper;
 import com.smart.elderly.mapper.ShiftHandoverWarningRelationMapper;
 import com.smart.elderly.vo.ShiftHandoverDetailVO;
@@ -146,10 +148,10 @@ public class ShiftHandoverRecordService extends ServiceImpl<ShiftHandoverRecordM
         int highLevelCount = 0;
 
         for (HealthWarningRecord warning : warnings) {
-            if ("PENDING".equals(warning.getStatus())) {
+            if (HealthWarningStatus.PENDING.getCode().equals(warning.getStatus())) {
                 pendingCount++;
             }
-            if ("HIGH".equals(warning.getWarningLevel())) {
+            if (WarningLevel.HIGH.getCode().equals(warning.getWarningLevel())) {
                 highLevelCount++;
             }
         }

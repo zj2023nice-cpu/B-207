@@ -18,4 +18,7 @@ public final class SecurityConstants {
 
     public static final int DEFAULT_SESSION_TIMEOUT_SECONDS = 3600 * 24;
     public static final int DEFAULT_SESSION_EXPIRE_HOURS = 24;
+
+    public static final String ROLE_ADMIN = "admin";
+    public static final String ROLE_USER = "user";
 }

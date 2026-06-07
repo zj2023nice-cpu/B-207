@@ -32,12 +32,10 @@ public class WarningRecordExportProvider extends BaseExportProvider<WarningRecor
 
     private static final Map<String, String> STATUS_MAP = new HashMap<>();
     static {
-        STATUS_MAP.put("PENDING", "待处理");
-        STATUS_MAP.put("READ", "已读");
-        STATUS_MAP.put("HANDLED", "已处理");
-        STATUS_MAP.put("IGNORED", "已忽略");
-        STATUS_MAP.put("REOPENED", "重新打开");
-        STATUS_MAP.put("ESCALATED", "升级处理");
+        for (com.smart.elderly.enums.HealthWarningStatus status : com.smart.elderly.enums.HealthWarningStatus.values()) {
+            STATUS_MAP.put(status.getCode(), status.getDisplayName());
+        }
+        STATUS_MAP.put(com.smart.elderly.enums.HealthWarningStatus.INVALIDATED_CODE, "已失效");
     }
 
     @Override

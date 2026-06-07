@@ -9,6 +9,9 @@ public enum NotificationStatus {
     UNREAD("UNREAD", "未读", "#F56C6C", "danger"),
     READ("READ", "已读", "#909399", "info");
 
+    public static final String UNREAD_CODE = "UNREAD";
+    public static final String READ_CODE = "READ";
+
     private final String code;
     private final String displayName;
     private final String color;

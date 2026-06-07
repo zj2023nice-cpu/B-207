@@ -13,6 +13,8 @@ public enum HealthWarningStatus {
     REOPENED("REOPENED", "重新打开", "#F56C6C", "danger"),
     ESCALATED("ESCALATED", "升级处理", "#E6A23C", "warning");
 
+    public static final String INVALIDATED_CODE = "INVALIDATED";
+
     private final String code;
     private final String displayName;
     private final String color;
@@ -98,5 +100,22 @@ public enum HealthWarningStatus {
 
     public boolean isClosed() {
         return this == HANDLED || this == IGNORED;
+    }
+
+    public String getActionType() {
+        switch (this) {
+            case READ:
+                return "READ";
+            case HANDLED:
+                return "HANDLE";
+            case IGNORED:
+                return "IGNORE";
+            case REOPENED:
+                return "REOPEN";
+            case ESCALATED:
+                return "ESCALATE";
+            default:
+                return "UPDATE";
+        }
     }
 }

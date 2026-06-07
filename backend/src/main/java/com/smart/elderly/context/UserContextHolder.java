@@ -29,7 +29,7 @@ public class UserContextHolder {
 
     public static boolean isAdmin() {
         String role = getRole();
-        return "admin".equalsIgnoreCase(role);
+        return com.smart.elderly.common.SecurityConstants.ROLE_ADMIN.equalsIgnoreCase(role);
     }
 
     public static void clear() {

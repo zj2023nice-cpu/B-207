@@ -8,6 +8,8 @@ import com.smart.elderly.entity.HealthRecord;
 import com.smart.elderly.entity.HealthRecordCorrection;
 import com.smart.elderly.entity.HealthWarningRecord;
 import com.smart.elderly.entity.HealthWarningThreshold;
+import com.smart.elderly.enums.HealthWarningStatus;
+import com.smart.elderly.enums.WarningLevel;
 import com.smart.elderly.mapper.HealthRecordCorrectionMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -171,9 +173,9 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
                     isAbnormal = true;
                     String reason = "体温异常(" + temperature + "℃)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "temperature", 
-                        temperature, threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "temperature",
+                        temperature, threshold.getHighThreshold(),
+                        WarningLevel.HIGH.getCode(), "老人" + elderlyName + reason));
                 }
             }
         }
@@ -187,17 +189,17 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
                     isAbnormal = true;
                     String reason = "收缩压异常(" + systolicPressure + "mmHg)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "systolicPressure", 
-                        actualValue, threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "systolicPressure",
+                        actualValue, threshold.getHighThreshold(),
+                        WarningLevel.HIGH.getCode(), "老人" + elderlyName + reason));
                 } else if (threshold.getLowThreshold() != null && 
                     actualValue.compareTo(threshold.getLowThreshold()) < 0) {
                     isAbnormal = true;
                     String reason = "收缩压异常(" + systolicPressure + "mmHg)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "systolicPressure", 
-                        actualValue, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "systolicPressure",
+                        actualValue, threshold.getLowThreshold(),
+                        WarningLevel.LOW.getCode(), "老人" + elderlyName + reason));
                 }
             }
         }
@@ -211,17 +213,17 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
                     isAbnormal = true;
                     String reason = "舒张压异常(" + diastolicPressure + "mmHg)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "diastolicPressure", 
-                        actualValue, threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "diastolicPressure",
+                        actualValue, threshold.getHighThreshold(),
+                        WarningLevel.HIGH.getCode(), "老人" + elderlyName + reason));
                 } else if (threshold.getLowThreshold() != null && 
                     actualValue.compareTo(threshold.getLowThreshold()) < 0) {
                     isAbnormal = true;
                     String reason = "舒张压异常(" + diastolicPressure + "mmHg)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "diastolicPressure", 
-                        actualValue, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "diastolicPressure",
+                        actualValue, threshold.getLowThreshold(),
+                        WarningLevel.LOW.getCode(), "老人" + elderlyName + reason));
                 }
             }
         }
@@ -235,17 +237,17 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
                     isAbnormal = true;
                     String reason = "心率异常(" + heartRate + "次/分)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "heartRate", 
-                        actualValue, threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "heartRate",
+                        actualValue, threshold.getHighThreshold(),
+                        WarningLevel.HIGH.getCode(), "老人" + elderlyName + reason));
                 } else if (threshold.getLowThreshold() != null && 
                     actualValue.compareTo(threshold.getLowThreshold()) < 0) {
                     isAbnormal = true;
                     String reason = "心率异常(" + heartRate + "次/分)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "heartRate", 
-                        actualValue, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "heartRate",
+                        actualValue, threshold.getLowThreshold(),
+                        WarningLevel.LOW.getCode(), "老人" + elderlyName + reason));
                 }
             }
         }
@@ -259,9 +261,9 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
                     isAbnormal = true;
                     String reason = "血氧异常(" + bloodOxygen + "%)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "bloodOxygen", 
-                        actualValue, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "bloodOxygen",
+                        actualValue, threshold.getLowThreshold(),
+                        WarningLevel.LOW.getCode(), "老人" + elderlyName + reason));
                 }
             }
         }
@@ -274,17 +276,17 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
                     isAbnormal = true;
                     String reason = "血糖异常(" + bloodSugar + "mmol/L)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "bloodSugar", 
-                        bloodSugar, threshold.getHighThreshold(), 
-                        "HIGH", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "bloodSugar",
+                        bloodSugar, threshold.getHighThreshold(),
+                        WarningLevel.HIGH.getCode(), "老人" + elderlyName + reason));
                 } else if (threshold.getLowThreshold() != null && 
                     bloodSugar.compareTo(threshold.getLowThreshold()) < 0) {
                     isAbnormal = true;
                     String reason = "血糖异常(" + bloodSugar + "mmol/L)";
                     abnormalReasons.add(reason);
-                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "bloodSugar", 
-                        bloodSugar, threshold.getLowThreshold(), 
-                        "LOW", "老人" + elderlyName + reason));
+                    pendingWarnings.add(new HealthRecordService.WarningInfo(elderlyId, "bloodSugar",
+                        bloodSugar, threshold.getLowThreshold(),
+                        WarningLevel.LOW.getCode(), "老人" + elderlyName + reason));
                 }
             }
         }
@@ -300,8 +302,8 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
         List<Integer> oldWarningIds = new ArrayList<>();
         for (HealthWarningRecord oldWarning : oldWarnings) {
             oldWarningIds.add(oldWarning.getId());
-            if (!"HANDLED".equals(oldWarning.getStatus())) {
-                oldWarning.setStatus("INVALIDATED");
+            if (!HealthWarningStatus.HANDLED.getCode().equals(oldWarning.getStatus())) {
+                oldWarning.setStatus(HealthWarningStatus.INVALIDATED_CODE);
                 oldWarning.setHandleRemark("因健康记录更正而失效");
                 oldWarning.setHandledAt(LocalDateTime.now());
                 oldWarning.setHandledBy("system");

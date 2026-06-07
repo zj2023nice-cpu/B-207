@@ -2,6 +2,7 @@ package com.smart.elderly.controller;
 
 import com.smart.elderly.annotation.OperationLog;
 import com.smart.elderly.common.Result;
+import com.smart.elderly.common.SecurityConstants;
 import com.smart.elderly.entity.User;
 import com.smart.elderly.entity.UserSession;
 import com.smart.elderly.service.UserSessionService;
@@ -18,7 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/user-sessions")
 public class UserSessionController {
 
-    private static final String SESSION_USER_KEY = "LOGIN_USER";
+    private static final String SESSION_USER_KEY = SecurityConstants.SESSION_USER_KEY;
 
     @Autowired
     private UserSessionService userSessionService;

@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 @Getter
 public enum NotificationType {
     HEALTH_WARNING("HEALTH_WARNING", "健康预警", true),
-    FOLLOWUP_TASK("FOLLOWUP_TASK", "跟进任务", true),
-    FOLLOWUP_TASK_REMINDER("FOLLOWUP_TASK_REMINDER", "任务提醒", true),
+    FOLLOWUP_TASK("FOLLOWUP_TASK", "跟进任务", false),
+    FOLLOWUP_TASK_REMINDER("FOLLOWUP_TASK_REMINDER", "任务提醒", false),
     SYSTEM_ANNOUNCEMENT("SYSTEM_ANNOUNCEMENT", "系统公告", false),
     QUALITY_REVIEW("QUALITY_REVIEW", "质量评审", false),
     GENERAL("GENERAL", "通用通知", false);
