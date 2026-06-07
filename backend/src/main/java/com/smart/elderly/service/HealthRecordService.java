@@ -211,13 +211,13 @@ public class HealthRecordService extends ServiceImpl<HealthRecordMapper, HealthR
         return saved;
     }
 
-    private static class WarningInfo {
-        Integer elderlyId;
-        String indicatorType;
-        BigDecimal actualValue;
-        BigDecimal thresholdValue;
-        String warningLevel;
-        String warningMessage;
+    public static class WarningInfo {
+        public Integer elderlyId;
+        public String indicatorType;
+        public BigDecimal actualValue;
+        public BigDecimal thresholdValue;
+        public String warningLevel;
+        public String warningMessage;
 
         public WarningInfo(Integer elderlyId, String indicatorType, BigDecimal actualValue,
                            BigDecimal thresholdValue, String warningLevel, String warningMessage) {

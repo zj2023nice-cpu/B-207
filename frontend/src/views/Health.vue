@@ -133,10 +133,99 @@
               </template>
             </el-table-column>
             <el-table-column prop="checkTime" label="检测时间" width="180" />
+            <el-table-column label="更正标记" width="100">
+              <template #default="scope">
+                <el-tag v-if="scope.row.corrected" type="warning" size="small">已更正</el-tag>
+                <el-tag v-else type="info" size="small">原始</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="180" fixed="right">
+              <template #default="scope">
+                <el-button type="primary" size="small" @click="openCorrectionDialog(scope.row)">更正</el-button>
+                <el-button type="info" size="small" @click="openCorrectionHistory(scope.row)">历史</el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
       </el-col>
     </el-row>
+
+    <el-dialog v-model="correctionDialogVisible" title="更正健康记录" width="600px">
+      <el-form :model="correctionForm" label-width="100px">
+        <el-form-item label="老人">
+          <el-input :value="currentCorrectionElderlyName" disabled />
+        </el-form-item>
+        <el-form-item label="收缩压">
+          <el-input-number v-model="correctionForm.systolicPressure" :min="50" :max="200" placeholder="mmHg" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="舒张压">
+          <el-input-number v-model="correctionForm.diastolicPressure" :min="30" :max="120" placeholder="mmHg" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="体温">
+          <el-input-number v-model="correctionForm.temperature" :precision="1" :step="0.1" :min="30" :max="45" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="心率">
+          <el-input-number v-model="correctionForm.heartRate" :min="30" :max="200" placeholder="次/分钟" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="血氧">
+          <el-input-number v-model="correctionForm.bloodOxygen" :min="70" :max="100" placeholder="%" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="血糖">
+          <el-input-number v-model="correctionForm.bloodSugar" :precision="1" :step="0.1" :min="2" :max="20" placeholder="mmol/L" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="更正原因" required>
+          <el-input v-model="correctionForm.correctionReason" type="textarea" :rows="3" placeholder="请输入更正原因" />
+        </el-form-item>
+        <el-form-item label="更正备注">
+          <el-input v-model="correctionForm.correctionRemark" type="textarea" :rows="2" placeholder="请输入更正备注（可选）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="correctionDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitCorrection" :loading="correctionSubmitting">确认更正</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="historyDialogVisible" title="更正历史记录" width="900px">
+      <el-table :data="correctionHistory" border v-loading="historyLoading">
+        <el-table-column prop="version" label="版本" width="80" />
+        <el-table-column prop="correctedBy" label="操作人" width="100" />
+        <el-table-column prop="correctedAt" label="更正时间" width="180" />
+        <el-table-column prop="correctionReason" label="更正原因" min-width="150" show-overflow-tooltip />
+        <el-table-column label="修改前" width="150">
+          <template #default="scope">
+            <div class="history-data">
+              <span v-if="scope.row.beforeSystolicPressure">血压: {{ scope.row.beforeSystolicPressure }}/{{ scope.row.beforeDiastolicPressure }}</span>
+              <span v-if="scope.row.beforeTemperature">体温: {{ scope.row.beforeTemperature }}℃</span>
+              <span v-if="scope.row.beforeHeartRate">心率: {{ scope.row.beforeHeartRate }}次/分</span>
+              <span v-if="scope.row.beforeBloodOxygen">血氧: {{ scope.row.beforeBloodOxygen }}%</span>
+              <span v-if="scope.row.beforeBloodSugar">血糖: {{ scope.row.beforeBloodSugar }}mmol/L</span>
+              <el-tag v-if="scope.row.beforeIsAbnormal" type="danger" size="small" style="margin-top: 4px;">异常</el-tag>
+              <el-tag v-else type="success" size="small" style="margin-top: 4px;">正常</el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="修改后" width="150">
+          <template #default="scope">
+            <div class="history-data">
+              <span v-if="scope.row.afterSystolicPressure">血压: {{ scope.row.afterSystolicPressure }}/{{ scope.row.afterDiastolicPressure }}</span>
+              <span v-if="scope.row.afterTemperature">体温: {{ scope.row.afterTemperature }}℃</span>
+              <span v-if="scope.row.afterHeartRate">心率: {{ scope.row.afterHeartRate }}次/分</span>
+              <span v-if="scope.row.afterBloodOxygen">血氧: {{ scope.row.afterBloodOxygen }}%</span>
+              <span v-if="scope.row.afterBloodSugar">血糖: {{ scope.row.afterBloodSugar }}mmol/L</span>
+              <el-tag v-if="scope.row.afterIsAbnormal" type="danger" size="small" style="margin-top: 4px;">异常</el-tag>
+              <el-tag v-else type="success" size="small" style="margin-top: 4px;">正常</el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="scope">
+            <el-tag v-if="scope.row.status === 'EFFECTIVE'" type="success" size="small">已生效</el-tag>
+            <el-tag v-else type="info" size="small">{{ scope.row.status }}</el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
@@ -157,6 +246,25 @@ const chartRef = ref(null)
 const filterElderlyId = ref(null)
 const filterIsAbnormal = ref(null)
 let chartInstance = null
+
+const correctionDialogVisible = ref(false)
+const historyDialogVisible = ref(false)
+const correctionSubmitting = ref(false)
+const historyLoading = ref(false)
+const currentCorrectionRecord = ref(null)
+const currentCorrectionElderlyName = ref('')
+const correctionHistory = ref([])
+const correctionForm = ref({
+  healthRecordId: null,
+  systolicPressure: null,
+  diastolicPressure: null,
+  temperature: null,
+  heartRate: null,
+  bloodOxygen: null,
+  bloodSugar: null,
+  correctionReason: '',
+  correctionRemark: ''
+})
 
 const healthForm = ref({
   elderlyId: null,
@@ -440,6 +548,60 @@ const handleExport = async () => {
   }
 }
 
+const openCorrectionDialog = (row) => {
+  currentCorrectionRecord.value = row
+  currentCorrectionElderlyName.value = row.elderlyName
+  correctionForm.value = {
+    healthRecordId: row.id,
+    systolicPressure: row.systolicPressure,
+    diastolicPressure: row.diastolicPressure,
+    temperature: row.temperature,
+    heartRate: row.heartRate,
+    bloodOxygen: row.bloodOxygen,
+    bloodSugar: row.bloodSugar,
+    correctionReason: '',
+    correctionRemark: ''
+  }
+  correctionDialogVisible.value = true
+}
+
+const submitCorrection = async () => {
+  if (!correctionForm.value.correctionReason) {
+    ElMessage.warning('请输入更正原因')
+    return
+  }
+  
+  correctionSubmitting.value = true
+  try {
+    await request.post('/health/correction/create', correctionForm.value)
+    ElMessage.success('更正成功，异常判断和预警已重新计算')
+    correctionDialogVisible.value = false
+    loadHistory()
+    if (selectedElderlyId.value === currentCorrectionRecord.value.elderlyId) {
+      loadTrendData()
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('更正失败：' + (error.response?.data?.message || error.message))
+  } finally {
+    correctionSubmitting.value = false
+  }
+}
+
+const openCorrectionHistory = async (row) => {
+  historyDialogVisible.value = true
+  historyLoading.value = true
+  try {
+    const res = await request.get(`/health/correction/list/${row.id}`)
+    correctionHistory.value = res.data || []
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('加载更正历史失败')
+  } finally {
+    historyLoading.value = false
+  }
+}
+
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   chartInstance && chartInstance.dispose()
@@ -481,6 +643,17 @@ onUnmounted(() => {
 .abnormal-reason {
   color: #909399;
   font-size: 12px;
+}
+
+.history-data {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.history-data span {
+  color: #606266;
 }
 
 :deep(.el-card__body) {

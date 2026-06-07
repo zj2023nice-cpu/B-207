@@ -28,6 +28,11 @@ public class HealthRecord {
     private String abnormalReason;
     private Boolean isAbnormal;
     private LocalDateTime checkTime;
+    
+    private Boolean corrected;
+    private LocalDateTime correctedAt;
+    private String correctedBy;
+    private Integer latestCorrectionId;
 
     @TableField(exist = false)
     private String elderlyName;
