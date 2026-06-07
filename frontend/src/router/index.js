@@ -49,6 +49,12 @@ const routes = [
                 meta: { title: '健康预警' }
             },
             {
+                path: 'warning/followup-task',
+                name: 'WarningFollowupTask',
+                component: () => import('../views/WarningFollowupTask.vue'),
+                meta: { title: '跟进任务' }
+            },
+            {
                 path: 'threshold',
                 name: 'Threshold',
                 component: () => import('../views/Threshold.vue'),

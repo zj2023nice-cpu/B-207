@@ -66,6 +66,19 @@
           </div>
         </el-card>
       </el-col>
+      <el-col :xs="12" :sm="12" :md="8" :lg="8" :xl="4">
+        <el-card class="stat-card followup-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon">
+              <el-icon :size="28"><List /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.followupTaskCount || 0 }}</div>
+              <div class="stat-label">跟进任务</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
     </el-row>
 
     <el-card class="filter-card">
@@ -292,7 +305,8 @@ const getItemTypeTagType = (itemType) => {
   const map = {
     WARNING: 'danger',
     NOTIFICATION: 'primary',
-    HEALTH_RECORD: 'warning'
+    HEALTH_RECORD: 'warning',
+    FOLLOWUP_TASK: 'success'
   }
   return map[itemType] || 'info'
 }
@@ -413,6 +427,10 @@ onMounted(async () => {
 
 .health-card .stat-icon {
   background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.followup-card .stat-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .stat-value {

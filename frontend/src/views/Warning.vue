@@ -102,6 +102,14 @@
               重开
             </el-button>
             <el-button 
+              type="success" 
+              size="small" 
+              link
+              @click="showCreateFollowupTask(scope.row)"
+            >
+              创建任务
+            </el-button>
+            <el-button 
               type="primary" 
               size="small" 
               link
@@ -214,11 +222,81 @@
           >
             {{ getActionNameByStatus(action) }}
           </el-button>
+          <el-button type="success" size="small" @click="showCreateFollowupTask(detailData)">
+            创建跟进任务
+          </el-button>
           <el-button v-if="detailData.allowedActions.length === 0" size="small" disabled>
             无可用操作
           </el-button>
         </div>
+
+        <div v-if="followupTasks.length > 0" class="followup-tasks-section">
+          <h4>跟进任务</h4>
+          <el-table :data="followupTasks" border size="small">
+            <el-table-column prop="title" label="任务标题" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="priority" label="优先级" width="80">
+              <template #default="scope">
+                <el-tag :type="getFollowupPriorityTagType(scope.row.priority)" size="small">
+                  {{ getFollowupPriorityName(scope.row.priority) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="90">
+              <template #default="scope">
+                <el-tag :type="getFollowupStatusType(scope.row.status)" size="small">
+                  {{ getFollowupStatusName(scope.row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="assigneeName" label="负责人" width="90" />
+            <el-table-column prop="deadline" label="截止时间" width="160" />
+            <el-table-column label="操作" width="80" fixed="right">
+              <template #default="scope">
+                <el-button type="primary" size="small" link @click="goToFollowupTask(scope.row)">
+                  查看
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
+    </el-dialog>
+
+    <el-dialog v-model="createFollowupTaskVisible" title="创建跟进任务" width="600px">
+      <el-form :model="followupTaskForm" label-width="100px">
+        <el-form-item label="关联预警">
+          <el-input :value="`#${detailData?.id || currentWarning?.id} - ${detailData?.warningMessage || currentWarning?.warningMessage}`" disabled />
+        </el-form-item>
+        <el-form-item label="任务标题" required>
+          <el-input v-model="followupTaskForm.title" placeholder="请输入任务标题" maxlength="200" show-word-limit />
+        </el-form-item>
+        <el-form-item label="任务描述">
+          <el-input v-model="followupTaskForm.description" type="textarea" :rows="3" placeholder="请输入任务描述" />
+        </el-form-item>
+        <el-form-item label="负责人">
+          <el-input v-model="followupTaskForm.assigneeName" placeholder="请输入负责人姓名" />
+        </el-form-item>
+        <el-form-item label="截止时间" required>
+          <el-date-picker
+            v-model="followupTaskForm.deadline"
+            type="datetime"
+            placeholder="选择截止时间"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            style="width: 100%;"
+          />
+        </el-form-item>
+        <el-form-item label="优先级">
+          <el-radio-group v-model="followupTaskForm.priority">
+            <el-radio value="HIGH">高</el-radio>
+            <el-radio value="MEDIUM">中</el-radio>
+            <el-radio value="LOW">低</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createFollowupTaskVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitFollowupTask">确认创建</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -248,6 +326,50 @@ const actionForm = ref({
   operator: '',
   remark: ''
 })
+
+const followupTasks = ref([])
+const createFollowupTaskVisible = ref(false)
+const followupTaskForm = ref({
+  warningRecordId: null,
+  title: '',
+  description: '',
+  assigneeName: '',
+  deadline: null,
+  priority: 'MEDIUM'
+})
+
+const followupStatusTypes = {
+  PENDING: 'danger',
+  IN_PROGRESS: 'warning',
+  COMPLETED: 'success',
+  OVERDUE: 'danger',
+  CANCELLED: 'info'
+}
+
+const followupStatusNames = {
+  PENDING: '待处理',
+  IN_PROGRESS: '处理中',
+  COMPLETED: '已完成',
+  OVERDUE: '已逾期',
+  CANCELLED: '已取消'
+}
+
+const followupPriorityNames = {
+  HIGH: '高',
+  MEDIUM: '中',
+  LOW: '低'
+}
+
+const followupPriorityTagTypes = {
+  HIGH: 'danger',
+  MEDIUM: 'warning',
+  LOW: 'info'
+}
+
+const getFollowupStatusType = (status) => followupStatusTypes[status] || 'info'
+const getFollowupStatusName = (status) => followupStatusNames[status] || status
+const getFollowupPriorityName = (priority) => followupPriorityNames[priority] || priority
+const getFollowupPriorityTagType = (priority) => followupPriorityTagTypes[priority] || 'info'
 
 const indicatorNames = {
   temperature: '体温',
@@ -488,9 +610,60 @@ const showDetailDialog = async (row) => {
     const res = await request.get(`/warning/record/${row.id}`)
     detailData.value = res.data
     detailDialogVisible.value = true
+    loadFollowupTasks(row.id)
   } catch (e) {
     ElMessage.error('获取详情失败')
   }
+}
+
+const loadFollowupTasks = async (warningRecordId) => {
+  try {
+    const res = await request.get('/warning/followup-task/list', {
+      params: { warningRecordId }
+    })
+    followupTasks.value = res.data || []
+  } catch (e) {
+    followupTasks.value = []
+  }
+}
+
+const showCreateFollowupTask = (row) => {
+  const warningId = row?.id || detailData.value?.id
+  followupTaskForm.value = {
+    warningRecordId: warningId,
+    title: '',
+    description: '',
+    assigneeName: '',
+    deadline: null,
+    priority: 'MEDIUM'
+  }
+  createFollowupTaskVisible.value = true
+}
+
+const submitFollowupTask = async () => {
+  if (!followupTaskForm.value.title.trim()) {
+    ElMessage.warning('请输入任务标题')
+    return
+  }
+  if (!followupTaskForm.value.deadline) {
+    ElMessage.warning('请选择截止时间')
+    return
+  }
+
+  try {
+    await request.post('/warning/followup-task/create', followupTaskForm.value)
+    ElMessage.success('任务创建成功')
+    createFollowupTaskVisible.value = false
+    if (detailData.value) {
+      loadFollowupTasks(detailData.value.id)
+    }
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '创建失败')
+  }
+}
+
+const goToFollowupTask = (task) => {
+  router.push(`/warning/followup-task?id=${task.id}`)
 }
 
 const handleExport = async () => {
@@ -620,5 +793,16 @@ onMounted(async () => {
 .allowed-actions-label {
   color: #606266;
   font-size: 14px;
+}
+
+.followup-tasks-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+}
+
+.followup-tasks-section h4 {
+  margin: 0 0 15px 0;
+  color: #303133;
 }
 </style>

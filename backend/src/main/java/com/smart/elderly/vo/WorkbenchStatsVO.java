@@ -13,6 +13,7 @@ public class WorkbenchStatsVO {
     private Long warningCount;
     private Long notificationCount;
     private Long healthRecordCount;
+    private Long followupTaskCount;
     private List<Map<String, Object>> elderlyStats;
     private List<WorkbenchItemVO> topPriorityItems;
 }

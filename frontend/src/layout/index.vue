@@ -39,6 +39,10 @@
             <el-icon><Warning /></el-icon>
             <span>健康预警</span>
           </el-menu-item>
+          <el-menu-item index="/warning/followup-task">
+            <el-icon><List /></el-icon>
+            <span>跟进任务</span>
+          </el-menu-item>
           <el-menu-item index="/threshold">
             <el-icon><Setting /></el-icon>
             <span>阈值配置</span>

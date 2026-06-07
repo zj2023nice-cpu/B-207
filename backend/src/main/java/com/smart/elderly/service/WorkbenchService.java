@@ -7,10 +7,13 @@ import com.smart.elderly.entity.Elderly;
 import com.smart.elderly.entity.HealthRecord;
 import com.smart.elderly.entity.HealthWarningRecord;
 import com.smart.elderly.entity.Notification;
+import com.smart.elderly.entity.WarningFollowupTask;
+import com.smart.elderly.enums.WarningFollowupTaskStatus;
 import com.smart.elderly.enums.HealthWarningStatus;
 import com.smart.elderly.mapper.ElderlyMapper;
 import com.smart.elderly.mapper.HealthRecordMapper;
 import com.smart.elderly.mapper.HealthWarningRecordMapper;
+import com.smart.elderly.mapper.WarningFollowupTaskMapper;
 import com.smart.elderly.vo.WorkbenchItemVO;
 import com.smart.elderly.vo.WorkbenchStatsVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +38,9 @@ public class WorkbenchService {
     private static final String ITEM_TYPE_WARNING = "WARNING";
     private static final String ITEM_TYPE_NOTIFICATION = "NOTIFICATION";
     private static final String ITEM_TYPE_HEALTH_RECORD = "HEALTH_RECORD";
+    private static final String ITEM_TYPE_FOLLOWUP_TASK = "FOLLOWUP_TASK";
+
+    private static final int SCORE_TYPE_FOLLOWUP_TASK = 90;
 
     private static final String PRIORITY_HIGH = "HIGH";
     private static final String PRIORITY_MEDIUM = "MEDIUM";
@@ -53,6 +59,9 @@ public class WorkbenchService {
 
     @Autowired
     private HealthRecordMapper healthRecordMapper;
+
+    @Autowired
+    private WarningFollowupTaskMapper followupTaskMapper;
 
     @Autowired
     private ElderlyMapper elderlyMapper;
@@ -74,6 +83,7 @@ public class WorkbenchService {
         stats.setWarningCount(allItems.stream().filter(i -> ITEM_TYPE_WARNING.equals(i.getItemType())).count());
         stats.setNotificationCount(allItems.stream().filter(i -> ITEM_TYPE_NOTIFICATION.equals(i.getItemType())).count());
         stats.setHealthRecordCount(allItems.stream().filter(i -> ITEM_TYPE_HEALTH_RECORD.equals(i.getItemType())).count());
+        stats.setFollowupTaskCount(allItems.stream().filter(i -> ITEM_TYPE_FOLLOWUP_TASK.equals(i.getItemType())).count());
 
         Map<Integer, List<WorkbenchItemVO>> itemsByElderly = allItems.stream()
                 .filter(i -> i.getElderlyId() != null)
@@ -148,6 +158,7 @@ public class WorkbenchService {
         items.addAll(collectWarningItems(isAdmin, visibleElderlyIds));
         items.addAll(collectNotificationItems(userId));
         items.addAll(collectHealthRecordItems(isAdmin, visibleElderlyIds));
+        items.addAll(collectFollowupTaskItems(userId, isAdmin, visibleElderlyIds));
 
         return items;
     }
@@ -533,6 +544,162 @@ public class WorkbenchService {
         return elderlyList.stream().collect(Collectors.toMap(Elderly::getId, Elderly::getName, (a, b) -> a));
     }
 
+    private List<WorkbenchItemVO> collectFollowupTaskItems(Integer userId, boolean isAdmin, List<Integer> visibleElderlyIds) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+
+        List<String> activeStatuses = Arrays.asList(
+                WarningFollowupTaskStatus.PENDING.getCode(),
+                WarningFollowupTaskStatus.IN_PROGRESS.getCode(),
+                WarningFollowupTaskStatus.OVERDUE.getCode()
+        );
+
+        LambdaQueryWrapper<WarningFollowupTask> wrapper = new LambdaQueryWrapper<WarningFollowupTask>();
+        wrapper.in(WarningFollowupTask::getStatus, activeStatuses);
+        wrapper.eq(WarningFollowupTask::getAssigneeId, userId);
+        if (!isAdmin && visibleElderlyIds != null && !visibleElderlyIds.isEmpty()) {
+            wrapper.in(WarningFollowupTask::getElderlyId, visibleElderlyIds);
+        }
+        wrapper.orderByAsc(WarningFollowupTask::getDeadline);
+
+        List<WarningFollowupTask> tasks = followupTaskMapper.selectList(wrapper);
+        List<Integer> elderlyIds = tasks.stream()
+                .map(WarningFollowupTask::getElderlyId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Integer, String> elderlyNameMap = getElderlyNameMap(elderlyIds);
+
+        List<WorkbenchItemVO> items = new ArrayList<WorkbenchItemVO>();
+        for (WarningFollowupTask task : tasks) {
+            WorkbenchItemVO item = new WorkbenchItemVO();
+            item.setItemId(ITEM_TYPE_FOLLOWUP_TASK + "_" + task.getId());
+            item.setItemType(ITEM_TYPE_FOLLOWUP_TASK);
+            item.setItemTypeName("跟进任务");
+            item.setSourceId(task.getId());
+            item.setElderlyId(task.getElderlyId());
+            item.setElderlyName(elderlyNameMap.get(task.getElderlyId()));
+            item.setTitle(task.getTitle());
+            item.setDescription(buildFollowupTaskDescription(task));
+            item.setStatus(task.getStatus());
+            item.setStatusName(resolveFollowupTaskStatusName(task.getStatus()));
+            item.setCreatedAt(task.getCreatedAt());
+            item.setDeadline(task.getDeadline());
+
+            int priorityScore = calculateFollowupTaskPriorityScore(task);
+            int timeScore = calculateFollowupTaskTimeScore(task.getDeadline());
+            int totalScore = (SCORE_TYPE_FOLLOWUP_TASK + priorityScore * 10) * timeScore / 100;
+
+            item.setPriorityScore(totalScore);
+            item.setPriority(determinePriority(totalScore));
+            item.setPriorityName(getPriorityDisplayName(item.getPriority()));
+            item.setDetailUrl("/warning/followup-task?id=" + task.getId());
+            item.setModuleUrl("/warning/followup-task");
+            item.setQuickActions(buildFollowupTaskQuickActions(task));
+            items.add(item);
+        }
+
+        return items;
+    }
+
+    private String buildFollowupTaskDescription(WarningFollowupTask task) {
+        StringBuilder sb = new StringBuilder();
+        if (task.getPriority() != null) {
+            sb.append("优先级: ").append(getPriorityDisplayName(task.getPriority()));
+        }
+        if (task.getDeadline() != null) {
+            sb.append(", 截止时间: ").append(task.getDeadline());
+        }
+        if (task.getAssigneeName() != null) {
+            sb.append(", 负责人: ").append(task.getAssigneeName());
+        }
+        return sb.toString();
+    }
+
+    private String resolveFollowupTaskStatusName(String status) {
+        WarningFollowupTaskStatus taskStatus = WarningFollowupTaskStatus.fromCode(status);
+        return taskStatus != null ? taskStatus.getDisplayName() : status;
+    }
+
+    private int calculateFollowupTaskPriorityScore(WarningFollowupTask task) {
+        if (task.getPriority() == null) {
+            return SCORE_LEVEL_MEDIUM;
+        }
+        switch (task.getPriority().toUpperCase()) {
+            case "HIGH":
+                return SCORE_LEVEL_HIGH;
+            case "MEDIUM":
+                return SCORE_LEVEL_MEDIUM;
+            case "LOW":
+                return SCORE_LEVEL_LOW;
+            default:
+                return SCORE_LEVEL_MEDIUM;
+        }
+    }
+
+    private int calculateFollowupTaskTimeScore(LocalDateTime deadline) {
+        if (deadline == null) {
+            return 50;
+        }
+        long hours = ChronoUnit.HOURS.between(LocalDateTime.now(), deadline);
+        if (hours < 0) {
+            return 100;
+        }
+        if (hours <= 1) {
+            return 100;
+        }
+        if (hours <= 6) {
+            return 90;
+        }
+        if (hours <= 24) {
+            return 80;
+        }
+        if (hours <= 72) {
+            return 60;
+        }
+        return 40;
+    }
+
+    private List<WorkbenchItemVO.QuickAction> buildFollowupTaskQuickActions(WarningFollowupTask task) {
+        List<WorkbenchItemVO.QuickAction> actions = new ArrayList<WorkbenchItemVO.QuickAction>();
+
+        WorkbenchItemVO.QuickAction openAction = new WorkbenchItemVO.QuickAction();
+        openAction.setActionKey("OPEN");
+        openAction.setActionName("查看详情");
+        openAction.setActionType("PRIMARY");
+        openAction.setApiUrl("/warning/followup-task?id=" + task.getId());
+        openAction.setMethod("ROUTE");
+        openAction.setRequireConfirm(false);
+        actions.add(openAction);
+
+        if (WarningFollowupTaskStatus.PENDING.getCode().equals(task.getStatus())) {
+            WorkbenchItemVO.QuickAction startAction = new WorkbenchItemVO.QuickAction();
+            startAction.setActionKey("START");
+            startAction.setActionName("开始处理");
+            startAction.setActionType("WARNING");
+            startAction.setApiUrl("/api/warning/followup-task/start/" + task.getId());
+            startAction.setMethod("PUT");
+            startAction.setRequireConfirm(false);
+            actions.add(startAction);
+        }
+
+        if (WarningFollowupTaskStatus.PENDING.getCode().equals(task.getStatus())
+                || WarningFollowupTaskStatus.IN_PROGRESS.getCode().equals(task.getStatus())
+                || WarningFollowupTaskStatus.OVERDUE.getCode().equals(task.getStatus())) {
+            WorkbenchItemVO.QuickAction completeAction = new WorkbenchItemVO.QuickAction();
+            completeAction.setActionKey("COMPLETE");
+            completeAction.setActionName("完成");
+            completeAction.setActionType("SUCCESS");
+            completeAction.setApiUrl("/warning/followup-task?id=" + task.getId());
+            completeAction.setMethod("ROUTE");
+            completeAction.setRequireConfirm(false);
+            actions.add(completeAction);
+        }
+
+        return actions;
+    }
+
     public List<Map<String, String>> getFilterOptions() {
         List<Map<String, String>> options = new ArrayList<Map<String, String>>();
 
@@ -550,6 +717,11 @@ public class WorkbenchService {
         typeOption3.put("value", ITEM_TYPE_HEALTH_RECORD);
         typeOption3.put("label", "异常健康记录");
         options.add(typeOption3);
+
+        Map<String, String> typeOption4 = new HashMap<String, String>();
+        typeOption4.put("value", ITEM_TYPE_FOLLOWUP_TASK);
+        typeOption4.put("label", "跟进任务");
+        options.add(typeOption4);
 
         return options;
     }
