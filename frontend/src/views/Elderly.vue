@@ -43,6 +43,10 @@
               <el-icon><Upload /></el-icon>
               批量导入
             </el-button>
+            <el-button type="warning" @click="detectDuplicates" style="margin-left: 10px;">
+              <el-icon><Warning /></el-icon>
+              检测重复档案
+            </el-button>
           </div>
         </div>
       </template>
@@ -351,6 +355,184 @@
         <el-button type="primary" @click="handleTagSave">确定</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="duplicateDialogVisible" title="重复档案检测" width="800px" @close="duplicateGroups = []">
+      <div v-if="detectingDuplicates" style="text-align: center; padding: 40px;">
+        <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+        <div style="margin-top: 16px; color: #909399;">正在检测重复档案...</div>
+      </div>
+      <div v-else-if="duplicateGroups.length === 0">
+        <el-result icon="success" title="未检测到重复档案" sub-title="系统中没有发现潜在的重复老人档案" />
+      </div>
+      <div v-else>
+        <el-alert 
+          :title="'共检测到 ' + duplicateGroups.length + ' 组潜在重复档案'" 
+          type="warning" 
+          :closable="false"
+          style="margin-bottom: 16px;"
+        />
+        <el-table :data="duplicateGroups" border>
+          <el-table-column label="匹配度" width="120" align="center">
+            <template #default="scope">
+              <el-tag :type="getConfidenceType(scope.row.confidence)">
+                {{ getConfidenceText(scope.row.confidence) }} ({{ scope.row.confidence }}%)
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="匹配原因" prop="matchReason" />
+          <el-table-column label="包含档案" width="120" align="center">
+            <template #default="scope">
+              {{ scope.row.elderlyList.length }} 条
+            </template>
+          </el-table-column>
+          <el-table-column label="关联数据" width="120" align="center">
+            <template #default="scope">
+              {{ scope.row.relatedDataCount }} 条
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="140" align="center">
+            <template #default="scope">
+              <el-button type="primary" size="small" @click="startMergeWizard(scope.row)">
+                开始合并
+              </el-button>
+            </template>
+          </el-table-column>
+          <el-table-column type="expand">
+            <template #default="scope">
+              <el-table :data="scope.row.elderlyList" size="small" border style="width: 100%">
+                <el-table-column prop="id" label="ID" width="80" />
+                <el-table-column prop="name" label="姓名" width="100" />
+                <el-table-column prop="age" label="年龄" width="80" />
+                <el-table-column prop="gender" label="性别" width="80" />
+                <el-table-column prop="phone" label="联系电话" width="130" />
+                <el-table-column prop="emergencyContactPhone" label="紧急联系人电话" width="130" />
+                <el-table-column prop="address" label="地址" min-width="150" show-overflow-tooltip />
+                <el-table-column prop="createdAt" label="创建时间" width="160">
+                  <template #default="scope">
+                    {{ scope.row.createdAt }}
+                  </template>
+                </el-table-column>
+              </el-table>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <template #footer>
+        <el-button @click="duplicateDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="mergeWizardVisible" :title="'合并档案向导 - 第' + mergeStep + '步，共3步'" width="900px" :close-on-click-modal="false" @close="cancelMerge">
+      <el-steps :active="mergeStep" finish-status="success" align-center style="margin-bottom: 24px;">
+        <el-step title="选择主档案" />
+        <el-step title="处理冲突字段" />
+        <el-step title="确认合并" />
+      </el-steps>
+
+      <div v-if="mergeStep === 1">
+        <el-alert title="请选择要保留的主档案，其他档案的关联数据将迁移到主档案" type="info" :closable="false" style="margin-bottom: 16px;" />
+        <el-radio-group v-model="selectedPrimaryId">
+          <div v-for="elderly in currentGroup?.elderlyList" :key="elderly.id" style="margin-bottom: 16px;">
+            <el-radio :value="elderly.id">
+              <strong>{{ elderly.name }}</strong> (ID: {{ elderly.id }})
+            </el-radio>
+            <el-descriptions :column="3" size="small" border style="margin-left: 24px; margin-top: 8px;">
+              <el-descriptions-item label="年龄">{{ elderly.age }}</el-descriptions-item>
+              <el-descriptions-item label="性别">{{ elderly.gender }}</el-descriptions-item>
+              <el-descriptions-item label="联系电话">{{ elderly.phone || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="紧急联系人">{{ elderly.emergencyContactName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="紧急电话">{{ elderly.emergencyContactPhone || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="状态">{{ elderly.status || '正常' }}</el-descriptions-item>
+              <el-descriptions-item label="地址" :span="3">{{ elderly.address || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间" :span="3">{{ elderly.createdAt }}</el-descriptions-item>
+            </el-descriptions>
+          </div>
+        </el-radio-group>
+      </div>
+
+      <div v-if="mergeStep === 2">
+        <el-alert title="请为每个冲突字段选择保留哪个值" type="warning" :closable="false" style="margin-bottom: 16px;" />
+        <div v-if="!mergePreview?.conflictFields || mergePreview.conflictFields.length === 0">
+          <el-result icon="success" title="无冲突字段" sub-title="两个档案的所有字段都一致，可以直接合并" />
+        </div>
+        <el-table v-else :data="mergePreview.conflictFields" border>
+          <el-table-column label="字段" prop="fieldLabel" width="150" />
+          <el-table-column label="主档案值" width="280">
+            <template #default="scope">
+              <el-radio 
+                :model-value="fieldSelections[scope.row.fieldName]" 
+                value="primary"
+                @change="fieldSelections[scope.row.fieldName] = 'primary'"
+              >
+                {{ getFieldDisplayValue(scope.row.primaryValue) }}
+                <el-tag v-if="scope.row.recommendedValue === scope.row.primaryValue" size="small" type="success" style="margin-left: 8px;">
+                  推荐
+                </el-tag>
+              </el-radio>
+            </template>
+          </el-table-column>
+          <el-table-column label="被合并档案值">
+            <template #default="scope">
+              <el-radio 
+                :model-value="fieldSelections[scope.row.fieldName]" 
+                value="merged"
+                @change="fieldSelections[scope.row.fieldName] = 'merged'"
+              >
+                {{ getFieldDisplayValue(scope.row.mergedValue) }}
+                <el-tag v-if="scope.row.recommendedValue === scope.row.mergedValue" size="small" type="success" style="margin-left: 8px;">
+                  推荐
+                </el-tag>
+              </el-radio>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <div v-if="mergeStep === 3">
+        <el-alert title="合并确认" type="warning" :closable="false" style="margin-bottom: 16px;">
+          <div>合并后，被合并档案将标记为"已合并"状态，所有关联数据将迁移到主档案。此操作不可撤销。</div>
+        </el-alert>
+        
+        <h4 style="margin-bottom: 12px;">将迁移以下关联数据：</h4>
+        <el-row :gutter="12">
+          <el-col :span="6" v-for="(count, type) in mergePreview?.relatedDataCounts" :key="type">
+            <el-card shadow="hover" style="text-align: center;">
+              <div style="font-size: 24px; font-weight: bold; color: #409EFF;">{{ count }}</div>
+              <div style="color: #606266; margin-top: 4px;">{{ type }}</div>
+            </el-card>
+          </el-col>
+        </el-row>
+
+        <h4 style="margin: 20px 0 12px 0;">字段选择摘要：</h4>
+        <el-table v-if="mergePreview?.conflictFields && mergePreview.conflictFields.length > 0" :data="mergePreview.conflictFields" border size="small">
+          <el-table-column label="字段" prop="fieldLabel" width="150" />
+          <el-table-column label="最终选择值">
+            <template #default="scope">
+              <el-tag :type="fieldSelections[scope.row.fieldName] === 'primary' ? 'primary' : 'success'">
+                {{ fieldSelections[scope.row.fieldName] === 'primary' ? '主档案：' : '被合并：' }}
+                {{ getFieldDisplayValue(fieldSelections[scope.row.fieldName] === 'primary' ? scope.row.primaryValue : scope.row.mergedValue) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div v-else>
+          <el-tag type="info">所有字段一致，无需选择</el-tag>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="cancelMerge">取消</el-button>
+        <el-button v-if="mergeStep > 1" :icon="ArrowLeft" @click="prevStep">上一步</el-button>
+        <el-button 
+          type="primary" 
+          :icon="mergeStep === 3 ? Check : ArrowRight" 
+          :loading="merging"
+          @click="nextStep"
+        >
+          {{ mergeStep === 3 ? '确认合并' : '下一步' }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -359,7 +541,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, UploadFilled, Download } from '@element-plus/icons-vue'
+import { Upload, UploadFilled, Download, Warning, ArrowLeft, ArrowRight, Check, Loading } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -390,6 +572,17 @@ const importing = ref(false)
 const uploadRef = ref(null)
 const selectedFile = ref(null)
 const importResult = ref(null)
+
+const duplicateDialogVisible = ref(false)
+const mergeWizardVisible = ref(false)
+const detectingDuplicates = ref(false)
+const duplicateGroups = ref([])
+const currentGroup = ref(null)
+const mergeStep = ref(1)
+const selectedPrimaryId = ref(null)
+const mergePreview = ref(null)
+const fieldSelections = ref({})
+const merging = ref(false)
 
 const form = ref({
   id: null,
@@ -760,6 +953,132 @@ const handleImportResultClose = () => {
     loadData()
   }
   resetImport()
+}
+
+const getConfidenceType = (confidence) => {
+  if (confidence >= 90) return 'danger'
+  if (confidence >= 75) return 'warning'
+  return 'info'
+}
+
+const getConfidenceText = (confidence) => {
+  if (confidence >= 90) return '高'
+  if (confidence >= 75) return '中'
+  return '低'
+}
+
+const detectDuplicates = async () => {
+  detectingDuplicates.value = true
+  duplicateDialogVisible.value = true
+  try {
+    const res = await request.get('/elderly/duplicates/detect')
+    duplicateGroups.value = res.data || []
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('检测失败')
+  } finally {
+    detectingDuplicates.value = false
+  }
+}
+
+const startMergeWizard = (group) => {
+  currentGroup.value = group
+  mergeStep.value = 1
+  selectedPrimaryId.value = group.elderlyList[0].id
+  mergeWizardVisible.value = true
+  duplicateDialogVisible.value = false
+}
+
+const prevStep = () => {
+  if (mergeStep.value > 1) {
+    mergeStep.value--
+  }
+}
+
+const nextStep = async () => {
+  if (mergeStep.value === 1) {
+    if (!selectedPrimaryId.value) {
+      ElMessage.warning('请选择主档案')
+      return
+    }
+    mergeStep.value = 2
+    await loadMergePreview()
+  } else if (mergeStep.value === 2) {
+    mergeStep.value = 3
+  } else if (mergeStep.value === 3) {
+    await confirmMerge()
+  }
+}
+
+const loadMergePreview = async () => {
+  const mergedId = currentGroup.value.elderlyList.find(e => e.id !== selectedPrimaryId.value)?.id
+  if (!mergedId) return
+  try {
+    const res = await request.get('/elderly/merge/preview', {
+      params: {
+        primaryId: selectedPrimaryId.value,
+        mergedId: mergedId
+      }
+    })
+    mergePreview.value = res.data
+    fieldSelections.value = {}
+    if (res.data.conflictFields) {
+      res.data.conflictFields.forEach(field => {
+        fieldSelections.value[field.fieldName] = 'primary'
+      })
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('加载合并预览失败')
+  }
+}
+
+const getFieldDisplayValue = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return '-'
+  }
+  return value
+}
+
+const confirmMerge = async () => {
+  const mergedId = currentGroup.value.elderlyList.find(e => e.id !== selectedPrimaryId.value)?.id
+  if (!mergedId) return
+
+  const fieldOverrides = {}
+  if (mergePreview.value && mergePreview.value.conflictFields) {
+    mergePreview.value.conflictFields.forEach(field => {
+      const selection = fieldSelections.value[field.fieldName]
+      if (selection === 'merged') {
+        fieldOverrides[field.fieldName] = field.mergedValue
+      }
+    })
+  }
+
+  merging.value = true
+  try {
+    await request.post('/elderly/merge', {
+      primaryElderlyId: selectedPrimaryId.value,
+      mergedElderlyId: mergedId,
+      fieldOverrides: fieldOverrides
+    })
+    ElMessage.success('合并成功')
+    mergeWizardVisible.value = false
+    loadData()
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('合并失败：' + (error.response?.data?.message || error.message))
+  } finally {
+    merging.value = false
+  }
+}
+
+const cancelMerge = () => {
+  mergeWizardVisible.value = false
+  currentGroup.value = null
+  mergeStep.value = 1
+  selectedPrimaryId.value = null
+  mergePreview.value = null
+  fieldSelections.value = {}
 }
 </script>
 

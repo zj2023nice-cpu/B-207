@@ -25,6 +25,10 @@ public class Elderly {
     
     private String status;
     
+    private Integer mergedToId;
+    private LocalDateTime mergedAt;
+    private String mergedBy;
+    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

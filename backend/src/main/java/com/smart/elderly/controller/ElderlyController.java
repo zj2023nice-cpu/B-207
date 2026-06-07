@@ -2,7 +2,11 @@ package com.smart.elderly.controller;
 
 import com.smart.elderly.annotation.OperationLog;
 import com.smart.elderly.common.Result;
+import com.smart.elderly.dto.DuplicateElderlyGroupDTO;
+import com.smart.elderly.dto.ElderlyMergeDTO;
+import com.smart.elderly.dto.MergePreviewDTO;
 import com.smart.elderly.entity.Elderly;
+import com.smart.elderly.service.ElderlyMergeService;
 import com.smart.elderly.service.ElderlyService;
 import com.smart.elderly.vo.ImportResultVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +24,9 @@ public class ElderlyController {
 
     @Autowired
     private ElderlyService elderlyService;
+
+    @Autowired
+    private ElderlyMergeService elderlyMergeService;
 
     @GetMapping("/list")
     public Result<List<Elderly>> list() {
@@ -73,6 +80,30 @@ public class ElderlyController {
             return Result.success(result);
         } catch (IOException e) {
             return Result.error("文件解析失败：" + e.getMessage());
+        }
+    }
+
+    @OperationLog(operation = "检测重复档案", description = "检测系统中潜在的重复老人档案")
+    @GetMapping("/duplicates/detect")
+    public Result<List<DuplicateElderlyGroupDTO>> detectDuplicates() {
+        return Result.success(elderlyMergeService.detectDuplicates());
+    }
+
+    @GetMapping("/merge/preview")
+    public Result<MergePreviewDTO> getMergePreview(
+            @RequestParam Integer primaryId,
+            @RequestParam Integer mergedId) {
+        return Result.success(elderlyMergeService.getMergePreview(primaryId, mergedId));
+    }
+
+    @OperationLog(operation = "合并老人档案", description = "合并两个重复的老人档案")
+    @PostMapping("/merge")
+    public Result<String> mergeElderly(@Valid @RequestBody ElderlyMergeDTO mergeDTO) {
+        try {
+            elderlyMergeService.mergeElderly(mergeDTO, "system");
+            return Result.success("合并成功");
+        } catch (Exception e) {
+            return Result.error("合并失败：" + e.getMessage());
         }
     }
 }
