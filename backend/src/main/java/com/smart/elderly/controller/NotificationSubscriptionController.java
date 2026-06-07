@@ -1,6 +1,7 @@
 package com.smart.elderly.controller;
 
 import com.smart.elderly.common.Result;
+import com.smart.elderly.context.UserContextHolder;
 import com.smart.elderly.entity.NotificationSubscription;
 import com.smart.elderly.service.NotificationSubscriptionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,18 +14,20 @@ public class NotificationSubscriptionController {
     @Autowired
     private NotificationSubscriptionService notificationSubscriptionService;
 
-    @GetMapping("/{userId}")
-    public Result<NotificationSubscription> getByUserId(@PathVariable Integer userId) {
+    @GetMapping
+    public Result<NotificationSubscription> getCurrentUserSubscription() {
+        Integer userId = UserContextHolder.getUserId();
         if (userId == null) {
-            return Result.error("用户ID不能为空");
+            return Result.error("用户未登录");
         }
         return Result.success(notificationSubscriptionService.getByUserId(userId));
     }
 
-    @PostMapping("/{userId}")
-    public Result<NotificationSubscription> saveOrUpdate(@PathVariable Integer userId, @RequestBody NotificationSubscription subscription) {
+    @PostMapping
+    public Result<NotificationSubscription> saveOrUpdate(@RequestBody NotificationSubscription subscription) {
+        Integer userId = UserContextHolder.getUserId();
         if (userId == null) {
-            return Result.error("用户ID不能为空");
+            return Result.error("用户未登录");
         }
         return Result.success(notificationSubscriptionService.saveOrUpdate(userId, subscription));
     }

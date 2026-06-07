@@ -5,9 +5,9 @@
         <div class="card-header">
           <div class="header-left">
             <span>通知消息</span>
-            <el-tag 
-              :type="subscriptionEnabled ? 'success' : 'info'" 
-              size="small" 
+            <el-tag
+              :type="subscriptionEnabled ? 'success' : 'info'"
+              size="small"
               class="subscription-tag"
               @click="goToSubscription"
               style="cursor: pointer;"
@@ -29,11 +29,11 @@
           </div>
         </div>
       </template>
-      
+
       <div class="subscription-info" v-if="subscriptionEnabled">
-        <el-alert 
-          :title="subscriptionInfoText" 
-          type="success" 
+        <el-alert
+          :title="subscriptionInfoText"
+          type="success"
           :closable="false"
           show-icon
           style="margin-bottom: 15px;"
@@ -43,11 +43,11 @@
           </template>
         </el-alert>
       </div>
-      
+
       <div class="notification-list">
-        <div 
-          v-for="item in notificationList" 
-          :key="item.id" 
+        <div
+          v-for="item in notificationList"
+          :key="item.id"
           class="notification-item"
           :class="{ 'unread': item.status === 'UNREAD' }"
           @click="handleRead(item)"
@@ -68,7 +68,7 @@
             <el-dot v-if="item.status === 'UNREAD'" class="unread-dot" />
           </div>
         </div>
-        
+
         <el-empty v-if="notificationList.length === 0" description="暂无通知消息" />
       </div>
     </el-card>
@@ -87,20 +87,11 @@ const unreadCount = ref(0)
 const subscriptionEnabled = ref(false)
 const subscription = ref(null)
 
-const userId = computed(() => {
-  const userStr = localStorage.getItem('user')
-  if (userStr) {
-    const user = JSON.parse(userStr)
-    return user.id
-  }
-  return null
-})
-
 const subscriptionInfoText = computed(() => {
   if (!subscription.value) return '订阅规则已启用'
   const parts = []
   if (subscription.value.notificationTypes) {
-    parts.push(`已选择消息类型`)
+    parts.push('已选择消息类型')
   }
   if (subscription.value.onlyAbnormal) {
     parts.push('仅异常类消息')
@@ -112,34 +103,32 @@ const subscriptionInfoText = computed(() => {
 })
 
 const loadNotifications = async () => {
-  if (!userId.value) return
-  const res = await request.get(`/notification/list/with-subscription/${userId.value}`)
+  const res = await request.get('/notification/list/with-subscription')
   notificationList.value = res.data || []
 }
 
 const loadUnreadCount = async () => {
-  if (!userId.value) return
-  const res = await request.get(`/notification/count/with-subscription/${userId.value}`)
+  const res = await request.get('/notification/count/with-subscription')
   unreadCount.value = res.data?.unreadCount || 0
   subscriptionEnabled.value = res.data?.subscriptionEnabled || false
-  subscription.value = res.data?.subscription
+  subscription.value = res.data?.subscription || null
+}
+
+const reloadPageState = async () => {
+  await Promise.all([loadNotifications(), loadUnreadCount()])
 }
 
 const handleRead = async (item) => {
   if (item.status === 'UNREAD') {
     await request.put(`/notification/read/${item.id}`)
-    item.status = 'READ'
-    unreadCount.value = Math.max(0, unreadCount.value - 1)
+    await reloadPageState()
   }
 }
 
 const handleMarkAllRead = async () => {
   await request.put('/notification/read-all')
   ElMessage.success('已全部标记为已读')
-  notificationList.value.forEach(item => {
-    item.status = 'READ'
-  })
-  unreadCount.value = 0
+  await reloadPageState()
 }
 
 const goToSubscription = () => {
@@ -147,8 +136,7 @@ const goToSubscription = () => {
 }
 
 onMounted(() => {
-  loadNotifications()
-  loadUnreadCount()
+  reloadPageState()
 })
 </script>
 

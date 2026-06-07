@@ -1,0 +1,644 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< com.smart:elderly-backend >----------------------
+[INFO] Building elderly-backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ elderly-backend ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 1 resource
+[INFO] Copying 0 resource
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ elderly-backend ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 86 source files to E:\solo-0605\B-207\backend\target\classes
+[INFO] 某些消息已经过简化; 请使用 -Xdiags:verbose 重新编译以获得完整输出
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[9,1] com.smart.elderly.annotation.OperationLog的 single-type-import 已定义具有相同简名的类型
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[57,18] 找不到符号
+  符号:   方法 setIndicatorType(java.lang.String)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[58,18] 找不到符号
+  符号:   方法 setHighThreshold(java.math.BigDecimal)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[59,18] 找不到符号
+  符号:   方法 setLowThreshold(java.math.BigDecimal)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[60,18] 找不到符号
+  符号:   方法 setEnabled(boolean)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[66,22] 找不到符号
+  符号:   方法 getId()
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[67,22] 找不到符号
+  符号:   方法 setCreatedAt(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[68,22] 找不到符号
+  符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[69,26] 找不到符号
+  符号:   方法 getEnabled()
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[70,26] 找不到符号
+  符号:   方法 setEnabled(boolean)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[74,22] 找不到符号
+  符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[96,22] 找不到符号
+  符号:   方法 setIndicatorType(java.lang.String)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[97,22] 找不到符号
+  符号:   方法 setHighThreshold(java.math.BigDecimal)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[98,22] 找不到符号
+  符号:   方法 setLowThreshold(java.math.BigDecimal)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[99,22] 找不到符号
+  符号:   方法 setEnabled(boolean)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[100,22] 找不到符号
+  符号:   方法 setCreatedAt(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[101,22] 找不到符号
+  符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[115,18] 找不到符号
+  符号:   方法 getEnabled()
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[116,35] 找不到符号
+  符号:   方法 getIndicatorType()
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[121,18] 找不到符号
+  符号:   方法 getEnabled()
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[122,35] 找不到符号
+  符号:   方法 getIndicatorType()
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[129,33] 找不到符号
+  符号:   方法 getHighThreshold()
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[130,32] 找不到符号
+  符号:   方法 getLowThreshold()
+  位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[13,15] 找不到符号
+  符号:   方法 setCode(int)
+  位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[14,15] 找不到符号
+  符号:   方法 setMessage(java.lang.String)
+  位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[15,15] 找不到符号
+  符号:   方法 setData(T)
+  位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[21,15] 找不到符号
+  符号:   方法 setCode(int)
+  位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[22,15] 找不到符号
+  符号:   方法 setMessage(java.lang.String)
+  位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationReadRecordService.java:[15,20] 方法引用无效
+  找不到符号
+    符号:   方法 getNotificationId()
+    位置: 类 com.smart.elderly.entity.NotificationReadRecord
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationReadRecordService.java:[16,21] 方法引用无效
+  找不到符号
+    符号:   方法 getUserId()
+    位置: 类 com.smart.elderly.entity.NotificationReadRecord
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/UserService.java:[13,21] 方法引用无效
+  找不到符号
+    符号:   方法 getUsername()
+    位置: 类 com.smart.elderly.entity.User
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/UserService.java:[14,21] 方法引用无效
+  找不到符号
+    符号:   方法 getPassword()
+    位置: 类 com.smart.elderly.entity.User
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[30,103] 找不到符号
+  符号:   方法 getNotificationTypes()
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[31,62] 找不到符号
+  符号:   方法 getEnabled()
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[32,67] 找不到符号
+  符号:   方法 getOnlyAbnormal()
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[33,74] 找不到符号
+  符号:   方法 getOnlyFollowedElderly()
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[37,19] 找不到符号
+  符号:   方法 setUserId(java.lang.Integer)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[38,19] 找不到符号
+  符号:   方法 setCreatedAt(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[39,19] 找不到符号
+  符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[40,19] 找不到符号
+  符号:   方法 setEnabled(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[41,19] 找不到符号
+  符号:   方法 setNotificationTypes(java.lang.String)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[42,19] 找不到符号
+  符号:   方法 setOnlyAbnormal(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[43,19] 找不到符号
+  符号:   方法 setOnlyFollowedElderly(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[48,17] 找不到符号
+  符号:   方法 setUserId(java.lang.Integer)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[49,17] 找不到符号
+  符号:   方法 setEnabled(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[50,17] 找不到符号
+  符号:   方法 setNotificationTypes(java.lang.String)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[51,17] 找不到符号
+  符号:   方法 setOnlyAbnormal(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[52,17] 找不到符号
+  符号:   方法 setOnlyFollowedElderly(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[53,17] 找不到符号
+  符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[60,21] 找不到符号
+  符号:   方法 setUserId(java.lang.Integer)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[61,21] 找不到符号
+  符号:   方法 setEnabled(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[62,21] 找不到符号
+  符号:   方法 setNotificationTypes(java.lang.String)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[63,21] 找不到符号
+  符号:   方法 setOnlyAbnormal(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[64,21] 找不到符号
+  符号:   方法 setOnlyFollowedElderly(boolean)
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[72,73] 找不到符号
+  符号:   方法 getNotificationTypes()
+  位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/ElderlyController.java:[34,20] 找不到符号
+  符号:   方法 getId()
+  位置: 类型为com.smart.elderly.entity.Elderly的变量 elderly
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[68,37] com.smart.elderly.annotation.OperationLog是抽象的; 无法实例化
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[72,25] 找不到符号
+  符号:   方法 setOperation(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[73,25] 找不到符号
+  符号:   方法 setDescription(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[78,21] 找不到符号
+  符号:   方法 setMethod(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[86,25] 找不到符号
+  符号:   方法 setParams(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[96,25] 找不到符号
+  符号:   方法 setIp(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[98,29] 找不到符号
+  符号:   方法 getUserId()
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[102,37] 找不到符号
+  符号:   方法 setUserId(int)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[107,29] 找不到符号
+  符号:   方法 getUsername()
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[110,33] 找不到符号
+  符号:   方法 setUsername(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[115,25] 找不到符号
+  符号:   方法 getUserId()
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[118,29] 找不到符号
+  符号:   方法 setUserId(java.lang.Integer)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[121,25] 找不到符号
+  符号:   方法 getUsername()
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[124,29] 找不到符号
+  符号:   方法 setUsername(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[128,21] 找不到符号
+  符号:   方法 setOperationTime(java.time.LocalDateTime)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[152,21] 找不到符号
+  符号:   方法 setSuccess(boolean)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[157,25] 找不到符号
+  符号:   方法 setErrorMsg(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[160,34] 不兼容的类型: com.smart.elderly.annotation.OperationLog无法转换为com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[205,33] 找不到符号
+  符号:   方法 setUsername(java.lang.String)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[209,37] 找不到符号
+  符号:   方法 setUserId(int)
+  位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[23,26] 方法引用无效
+  找不到符号
+    符号:   方法 getUsername()
+    位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[26,24] 方法引用无效
+  找不到符号
+    符号:   方法 getOperation()
+    位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[29,24] 方法引用无效
+  找不到符号
+    符号:   方法 getOperationTime()
+    位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[32,24] 方法引用无效
+  找不到符号
+    符号:   方法 getOperationTime()
+    位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[35,29] 方法引用无效
+  找不到符号
+    符号:   方法 getOperationTime()
+    位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[43,34] 找不到符号
+  符号:   方法 getUsername()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[44,34] 找不到符号
+  符号:   方法 getPassword()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[52,24] 找不到符号
+  符号:   方法 getCaptchaUuid()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[52,60] 找不到符号
+  符号:   方法 getCaptchaCode()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[55,74] 找不到符号
+  符号:   方法 getCaptchaUuid()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[55,100] 找不到符号
+  符号:   方法 getCaptchaCode()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[70,38] 找不到符号
+  符号:   方法 getId()
+  位置: 类型为com.smart.elderly.entity.User的变量 dbUser
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[71,44] 找不到符号
+  符号:   方法 getUsername()
+  位置: 类型为com.smart.elderly.entity.User的变量 dbUser
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[72,40] 找不到符号
+  符号:   方法 getRole()
+  位置: 类型为com.smart.elderly.entity.User的变量 dbUser
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[101,32] 找不到符号
+  符号:   方法 getId()
+  位置: 类型为com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[102,38] 找不到符号
+  符号:   方法 getUsername()
+  位置: 类型为com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[103,34] 找不到符号
+  符号:   方法 getRole()
+  位置: 类型为com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[121,52] 找不到符号
+  符号:   方法 getUsername()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[121,29] 方法引用无效
+  找不到符号
+    符号:   方法 getUsername()
+    位置: 类 com.smart.elderly.entity.User
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[125,17] 找不到符号
+  符号:   方法 getRole()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[125,43] 找不到符号
+  符号:   方法 getRole()
+  位置: 类型为@javax.validation.Valid com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[126,17] 找不到符号
+  符号:   方法 setRole(java.lang.String)
+  位置: 类型为@javax.validation.Valid com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/SystemAnnouncementController.java:[54,49] 找不到符号
+  符号:   方法 getStatus()
+  位置: 类型为com.smart.elderly.entity.SystemAnnouncement的变量 announcement
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/SystemAnnouncementController.java:[57,29] 找不到符号
+  符号:   方法 getPublishStartTime()
+  位置: 类型为com.smart.elderly.entity.SystemAnnouncement的变量 announcement
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.264 s
+[INFO] Finished at: 2026-06-07T11:41:44+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project elderly-backend: Compilation failure: Compilation failure: 
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[9,1] com.smart.elderly.annotation.OperationLog的 single-type-import 已定义具有相同简名的类型
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[57,18] 找不到符号
+[ERROR]   符号:   方法 setIndicatorType(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[58,18] 找不到符号
+[ERROR]   符号:   方法 setHighThreshold(java.math.BigDecimal)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[59,18] 找不到符号
+[ERROR]   符号:   方法 setLowThreshold(java.math.BigDecimal)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[60,18] 找不到符号
+[ERROR]   符号:   方法 setEnabled(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[66,22] 找不到符号
+[ERROR]   符号:   方法 getId()
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[67,22] 找不到符号
+[ERROR]   符号:   方法 setCreatedAt(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[68,22] 找不到符号
+[ERROR]   符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[69,26] 找不到符号
+[ERROR]   符号:   方法 getEnabled()
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[70,26] 找不到符号
+[ERROR]   符号:   方法 setEnabled(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[74,22] 找不到符号
+[ERROR]   符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[96,22] 找不到符号
+[ERROR]   符号:   方法 setIndicatorType(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[97,22] 找不到符号
+[ERROR]   符号:   方法 setHighThreshold(java.math.BigDecimal)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[98,22] 找不到符号
+[ERROR]   符号:   方法 setLowThreshold(java.math.BigDecimal)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[99,22] 找不到符号
+[ERROR]   符号:   方法 setEnabled(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[100,22] 找不到符号
+[ERROR]   符号:   方法 setCreatedAt(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[101,22] 找不到符号
+[ERROR]   符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 threshold
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[115,18] 找不到符号
+[ERROR]   符号:   方法 getEnabled()
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[116,35] 找不到符号
+[ERROR]   符号:   方法 getIndicatorType()
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[121,18] 找不到符号
+[ERROR]   符号:   方法 getEnabled()
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[122,35] 找不到符号
+[ERROR]   符号:   方法 getIndicatorType()
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[129,33] 找不到符号
+[ERROR]   符号:   方法 getHighThreshold()
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/HealthWarningThresholdService.java:[130,32] 找不到符号
+[ERROR]   符号:   方法 getLowThreshold()
+[ERROR]   位置: 类型为com.smart.elderly.entity.HealthWarningThreshold的变量 t
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[13,15] 找不到符号
+[ERROR]   符号:   方法 setCode(int)
+[ERROR]   位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[14,15] 找不到符号
+[ERROR]   符号:   方法 setMessage(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[15,15] 找不到符号
+[ERROR]   符号:   方法 setData(T)
+[ERROR]   位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[21,15] 找不到符号
+[ERROR]   符号:   方法 setCode(int)
+[ERROR]   位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/common/Result.java:[22,15] 找不到符号
+[ERROR]   符号:   方法 setMessage(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.common.Result<T>的变量 result
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationReadRecordService.java:[15,20] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getNotificationId()
+[ERROR]     位置: 类 com.smart.elderly.entity.NotificationReadRecord
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationReadRecordService.java:[16,21] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getUserId()
+[ERROR]     位置: 类 com.smart.elderly.entity.NotificationReadRecord
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/UserService.java:[13,21] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getUsername()
+[ERROR]     位置: 类 com.smart.elderly.entity.User
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/UserService.java:[14,21] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getPassword()
+[ERROR]     位置: 类 com.smart.elderly.entity.User
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[30,103] 找不到符号
+[ERROR]   符号:   方法 getNotificationTypes()
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[31,62] 找不到符号
+[ERROR]   符号:   方法 getEnabled()
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[32,67] 找不到符号
+[ERROR]   符号:   方法 getOnlyAbnormal()
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[33,74] 找不到符号
+[ERROR]   符号:   方法 getOnlyFollowedElderly()
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[37,19] 找不到符号
+[ERROR]   符号:   方法 setUserId(java.lang.Integer)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[38,19] 找不到符号
+[ERROR]   符号:   方法 setCreatedAt(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[39,19] 找不到符号
+[ERROR]   符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[40,19] 找不到符号
+[ERROR]   符号:   方法 setEnabled(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[41,19] 找不到符号
+[ERROR]   符号:   方法 setNotificationTypes(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[42,19] 找不到符号
+[ERROR]   符号:   方法 setOnlyAbnormal(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[43,19] 找不到符号
+[ERROR]   符号:   方法 setOnlyFollowedElderly(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 entity
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[48,17] 找不到符号
+[ERROR]   符号:   方法 setUserId(java.lang.Integer)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[49,17] 找不到符号
+[ERROR]   符号:   方法 setEnabled(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[50,17] 找不到符号
+[ERROR]   符号:   方法 setNotificationTypes(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[51,17] 找不到符号
+[ERROR]   符号:   方法 setOnlyAbnormal(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[52,17] 找不到符号
+[ERROR]   符号:   方法 setOnlyFollowedElderly(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[53,17] 找不到符号
+[ERROR]   符号:   方法 setUpdatedAt(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 existing
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[60,21] 找不到符号
+[ERROR]   符号:   方法 setUserId(java.lang.Integer)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[61,21] 找不到符号
+[ERROR]   符号:   方法 setEnabled(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[62,21] 找不到符号
+[ERROR]   符号:   方法 setNotificationTypes(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[63,21] 找不到符号
+[ERROR]   符号:   方法 setOnlyAbnormal(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[64,21] 找不到符号
+[ERROR]   符号:   方法 setOnlyFollowedElderly(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/NotificationSubscriptionService.java:[72,73] 找不到符号
+[ERROR]   符号:   方法 getNotificationTypes()
+[ERROR]   位置: 类型为com.smart.elderly.entity.NotificationSubscription的变量 subscription
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/ElderlyController.java:[34,20] 找不到符号
+[ERROR]   符号:   方法 getId()
+[ERROR]   位置: 类型为com.smart.elderly.entity.Elderly的变量 elderly
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[68,37] com.smart.elderly.annotation.OperationLog是抽象的; 无法实例化
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[72,25] 找不到符号
+[ERROR]   符号:   方法 setOperation(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[73,25] 找不到符号
+[ERROR]   符号:   方法 setDescription(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[78,21] 找不到符号
+[ERROR]   符号:   方法 setMethod(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[86,25] 找不到符号
+[ERROR]   符号:   方法 setParams(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[96,25] 找不到符号
+[ERROR]   符号:   方法 setIp(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[98,29] 找不到符号
+[ERROR]   符号:   方法 getUserId()
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[102,37] 找不到符号
+[ERROR]   符号:   方法 setUserId(int)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[107,29] 找不到符号
+[ERROR]   符号:   方法 getUsername()
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[110,33] 找不到符号
+[ERROR]   符号:   方法 setUsername(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[115,25] 找不到符号
+[ERROR]   符号:   方法 getUserId()
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[118,29] 找不到符号
+[ERROR]   符号:   方法 setUserId(java.lang.Integer)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[121,25] 找不到符号
+[ERROR]   符号:   方法 getUsername()
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[124,29] 找不到符号
+[ERROR]   符号:   方法 setUsername(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[128,21] 找不到符号
+[ERROR]   符号:   方法 setOperationTime(java.time.LocalDateTime)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[152,21] 找不到符号
+[ERROR]   符号:   方法 setSuccess(boolean)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[157,25] 找不到符号
+[ERROR]   符号:   方法 setErrorMsg(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[160,34] 不兼容的类型: com.smart.elderly.annotation.OperationLog无法转换为com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[205,33] 找不到符号
+[ERROR]   符号:   方法 setUsername(java.lang.String)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/aspect/OperationLogAspect.java:[209,37] 找不到符号
+[ERROR]   符号:   方法 setUserId(int)
+[ERROR]   位置: 类型为com.smart.elderly.annotation.OperationLog的变量 operationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[23,26] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getUsername()
+[ERROR]     位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[26,24] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getOperation()
+[ERROR]     位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[29,24] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getOperationTime()
+[ERROR]     位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[32,24] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getOperationTime()
+[ERROR]     位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/service/OperationLogService.java:[35,29] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getOperationTime()
+[ERROR]     位置: 类 com.smart.elderly.entity.OperationLog
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[43,34] 找不到符号
+[ERROR]   符号:   方法 getUsername()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[44,34] 找不到符号
+[ERROR]   符号:   方法 getPassword()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[52,24] 找不到符号
+[ERROR]   符号:   方法 getCaptchaUuid()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[52,60] 找不到符号
+[ERROR]   符号:   方法 getCaptchaCode()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[55,74] 找不到符号
+[ERROR]   符号:   方法 getCaptchaUuid()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[55,100] 找不到符号
+[ERROR]   符号:   方法 getCaptchaCode()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.dto.LoginRequest的变量 request
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[70,38] 找不到符号
+[ERROR]   符号:   方法 getId()
+[ERROR]   位置: 类型为com.smart.elderly.entity.User的变量 dbUser
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[71,44] 找不到符号
+[ERROR]   符号:   方法 getUsername()
+[ERROR]   位置: 类型为com.smart.elderly.entity.User的变量 dbUser
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[72,40] 找不到符号
+[ERROR]   符号:   方法 getRole()
+[ERROR]   位置: 类型为com.smart.elderly.entity.User的变量 dbUser
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[101,32] 找不到符号
+[ERROR]   符号:   方法 getId()
+[ERROR]   位置: 类型为com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[102,38] 找不到符号
+[ERROR]   符号:   方法 getUsername()
+[ERROR]   位置: 类型为com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[103,34] 找不到符号
+[ERROR]   符号:   方法 getRole()
+[ERROR]   位置: 类型为com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[121,52] 找不到符号
+[ERROR]   符号:   方法 getUsername()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[121,29] 方法引用无效
+[ERROR]   找不到符号
+[ERROR]     符号:   方法 getUsername()
+[ERROR]     位置: 类 com.smart.elderly.entity.User
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[125,17] 找不到符号
+[ERROR]   符号:   方法 getRole()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[125,43] 找不到符号
+[ERROR]   符号:   方法 getRole()
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/UserController.java:[126,17] 找不到符号
+[ERROR]   符号:   方法 setRole(java.lang.String)
+[ERROR]   位置: 类型为@javax.validation.Valid com.smart.elderly.entity.User的变量 user
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/SystemAnnouncementController.java:[54,49] 找不到符号
+[ERROR]   符号:   方法 getStatus()
+[ERROR]   位置: 类型为com.smart.elderly.entity.SystemAnnouncement的变量 announcement
+[ERROR] /E:/solo-0605/B-207/backend/src/main/java/com/smart/elderly/controller/SystemAnnouncementController.java:[57,29] 找不到符号
+[ERROR]   符号:   方法 getPublishStartTime()
+[ERROR]   位置: 类型为com.smart.elderly.entity.SystemAnnouncement的变量 announcement
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smart.elderly.annotation.OperationLog;
 import com.smart.elderly.context.UserContextHolder;
-import com.smart.elderly.entity.OperationLog;
 import com.smart.elderly.service.OperationLogService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -65,12 +64,12 @@ public class OperationLogAspect {
     private void saveOperationLog(ProceedingJoinPoint point, Object result, Throwable exception, long time) {
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
-        OperationLog operationLog = new OperationLog();
+        com.smart.elderly.entity.OperationLog operationLog = new com.smart.elderly.entity.OperationLog();
 
-        OperationLog annotation = method.getAnnotation(OperationLog.class);
-        if (annotation != null) {
-            operationLog.setOperation(annotation.operation());
-            operationLog.setDescription(annotation.description());
+        OperationLog operationLogAnnotation = method.getAnnotation(OperationLog.class);
+        if (operationLogAnnotation != null) {
+            operationLog.setOperation(operationLogAnnotation.operation());
+            operationLog.setDescription(operationLogAnnotation.description());
         }
 
         String className = point.getTarget().getClass().getName();
@@ -194,7 +193,7 @@ public class OperationLogAspect {
         }
     }
 
-    private void extractUserInfo(Object[] args, OperationLog operationLog) {
+    private void extractUserInfo(Object[] args, com.smart.elderly.entity.OperationLog operationLog) {
         for (Object arg : args) {
             if (arg == null) continue;
             

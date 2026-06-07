@@ -9,7 +9,9 @@ import com.smart.elderly.mapper.NotificationMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,131 +23,93 @@ public class NotificationService extends ServiceImpl<NotificationMapper, Notific
     private NotificationSubscriptionService subscriptionService;
 
     @Autowired
+    private NotificationReadRecordService notificationReadRecordService;
+
+    @Autowired
     private ElderlyFollowMapper elderlyFollowMapper;
 
-    public List<Notification> getAllWithElderlyName() {
-        return baseMapper.findAllWithElderlyName();
+    public List<Notification> getAllWithElderlyName(Integer userId) {
+        return baseMapper.findAllVisibleWithElderlyName(userId);
     }
 
-    public List<Notification> getAllUnreadWithElderlyName() {
-        return baseMapper.findAllUnreadWithElderlyName();
+    public List<Notification> getAllUnreadWithElderlyName(Integer userId) {
+        return baseMapper.findAllVisibleUnreadWithElderlyName(userId);
     }
 
-    public List<Notification> getByElderlyIdWithName(Integer elderlyId) {
-        return baseMapper.findByElderlyIdWithName(elderlyId);
+    public List<Notification> getByElderlyIdWithName(Integer elderlyId, Integer userId) {
+        return baseMapper.findVisibleByElderlyIdWithName(elderlyId, userId);
     }
 
-    public Map<String, Object> countUnread() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("unreadCount", baseMapper.countAllUnread());
+    public Map<String, Object> countUnread(Integer userId) {
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("unreadCount", baseMapper.countVisibleUnread(userId));
         return result;
     }
 
-    public List<Notification> getByUserId(Integer userId) {
-        return baseMapper.findByUserId(userId);
-    }
-
-    public List<Notification> getUnreadByUserId(Integer userId) {
-        return baseMapper.findUnreadByUserId(userId);
-    }
-
-    public long countUnreadByUserId(Integer userId) {
-        return baseMapper.countUnreadByUserId(userId);
-    }
-
     public List<Notification> getAllWithSubscription(Integer userId) {
-        NotificationSubscription subscription = subscriptionService.getByUserId(userId);
-        if (subscription.getEnabled() == null || !subscription.getEnabled()) {
-            return baseMapper.findAllWithElderlyName();
+        NotificationQueryContext queryContext = buildQueryContext(userId);
+        if (!queryContext.subscriptionEnabled) {
+            return baseMapper.findAllVisibleWithElderlyName(userId);
         }
-        
-        List<String> notificationTypes = null;
-        if (subscription.getNotificationTypes() != null && !subscription.getNotificationTypes().isEmpty()) {
-            notificationTypes = List.of(subscription.getNotificationTypes().split(","));
-        }
-        
-        List<Integer> followedElderlyIds = null;
-        if (subscription.getOnlyFollowedElderly() != null && subscription.getOnlyFollowedElderly()) {
-            followedElderlyIds = elderlyFollowMapper.getFollowedElderlyIds(userId);
-        }
-        
+
         return baseMapper.findAllWithSubscription(
-            notificationTypes,
-            subscription.getOnlyAbnormal(),
-            subscription.getOnlyFollowedElderly(),
-            followedElderlyIds
+                userId,
+                queryContext.notificationTypes,
+                queryContext.onlyAbnormal,
+                queryContext.onlyFollowedElderly,
+                queryContext.followedElderlyIds
         );
     }
 
     public List<Notification> getAllUnreadWithSubscription(Integer userId) {
-        NotificationSubscription subscription = subscriptionService.getByUserId(userId);
-        if (subscription.getEnabled() == null || !subscription.getEnabled()) {
-            return baseMapper.findAllUnreadWithElderlyName();
+        NotificationQueryContext queryContext = buildQueryContext(userId);
+        if (!queryContext.subscriptionEnabled) {
+            return baseMapper.findAllVisibleUnreadWithElderlyName(userId);
         }
-        
-        List<String> notificationTypes = null;
-        if (subscription.getNotificationTypes() != null && !subscription.getNotificationTypes().isEmpty()) {
-            notificationTypes = List.of(subscription.getNotificationTypes().split(","));
-        }
-        
-        List<Integer> followedElderlyIds = null;
-        if (subscription.getOnlyFollowedElderly() != null && subscription.getOnlyFollowedElderly()) {
-            followedElderlyIds = elderlyFollowMapper.getFollowedElderlyIds(userId);
-        }
-        
+
         return baseMapper.findAllUnreadWithSubscription(
-            notificationTypes,
-            subscription.getOnlyAbnormal(),
-            subscription.getOnlyFollowedElderly(),
-            followedElderlyIds
+                userId,
+                queryContext.notificationTypes,
+                queryContext.onlyAbnormal,
+                queryContext.onlyFollowedElderly,
+                queryContext.followedElderlyIds
         );
     }
 
     public Map<String, Object> countUnreadWithSubscription(Integer userId) {
-        Map<String, Object> result = new HashMap<>();
-        NotificationSubscription subscription = subscriptionService.getByUserId(userId);
-        
+        Map<String, Object> result = new HashMap<String, Object>();
+        NotificationQueryContext queryContext = buildQueryContext(userId);
+
         long unreadCount;
-        if (subscription.getEnabled() == null || !subscription.getEnabled()) {
-            unreadCount = baseMapper.countAllUnread();
+        if (!queryContext.subscriptionEnabled) {
+            unreadCount = baseMapper.countVisibleUnread(userId);
         } else {
-            List<String> notificationTypes = null;
-            if (subscription.getNotificationTypes() != null && !subscription.getNotificationTypes().isEmpty()) {
-                notificationTypes = List.of(subscription.getNotificationTypes().split(","));
-            }
-            
-            List<Integer> followedElderlyIds = null;
-            if (subscription.getOnlyFollowedElderly() != null && subscription.getOnlyFollowedElderly()) {
-                followedElderlyIds = elderlyFollowMapper.getFollowedElderlyIds(userId);
-            }
-            
             unreadCount = baseMapper.countAllUnreadWithSubscription(
-                notificationTypes,
-                subscription.getOnlyAbnormal(),
-                subscription.getOnlyFollowedElderly(),
-                followedElderlyIds
+                    userId,
+                    queryContext.notificationTypes,
+                    queryContext.onlyAbnormal,
+                    queryContext.onlyFollowedElderly,
+                    queryContext.followedElderlyIds
             );
         }
-        
+
         result.put("unreadCount", unreadCount);
-        result.put("subscriptionEnabled", subscription.getEnabled() != null && subscription.getEnabled());
-        result.put("subscription", subscription);
+        result.put("subscriptionEnabled", queryContext.subscriptionEnabled);
+        result.put("subscription", queryContext.subscription);
         return result;
     }
 
     @Transactional
-    public void markAsRead(Integer id) {
-        baseMapper.markAsRead(id);
+    public void markAsRead(Integer id, Integer userId) {
+        notificationReadRecordService.markAsRead(id, userId);
     }
 
     @Transactional
     public void markAllAsRead(Integer userId) {
-        baseMapper.markAllAsRead(userId);
-    }
-
-    @Transactional
-    public void markAllSystemAsRead() {
-        baseMapper.markAllSystemAsRead();
+        List<Notification> unreadNotifications = getAllUnreadWithSubscription(userId);
+        for (Notification notification : unreadNotifications) {
+            notificationReadRecordService.markAsRead(notification.getId(), userId);
+        }
     }
 
     @Transactional
@@ -156,9 +120,8 @@ public class NotificationService extends ServiceImpl<NotificationMapper, Notific
         notification.setTitle("健康预警通知");
         notification.setContent(warningRecord.getWarningMessage());
         notification.setNotificationType("HEALTH_WARNING");
-        notification.setStatus("UNREAD");
         notification.setCreatedAt(LocalDateTime.now());
-        
+
         this.save(notification);
         return notification;
     }
@@ -170,10 +133,35 @@ public class NotificationService extends ServiceImpl<NotificationMapper, Notific
         notification.setTitle(title);
         notification.setContent(content);
         notification.setNotificationType(type);
-        notification.setStatus("UNREAD");
         notification.setCreatedAt(LocalDateTime.now());
-        
+
         this.save(notification);
         return notification;
+    }
+
+    private NotificationQueryContext buildQueryContext(Integer userId) {
+        NotificationSubscription subscription = subscriptionService.getByUserId(userId);
+        NotificationQueryContext context = new NotificationQueryContext();
+        context.subscription = subscription;
+        context.subscriptionEnabled = subscription.getEnabled() != null && subscription.getEnabled();
+        context.notificationTypes = subscriptionService.getNotificationTypesList(subscription);
+        context.onlyAbnormal = subscription.getOnlyAbnormal();
+        context.onlyFollowedElderly = subscription.getOnlyFollowedElderly();
+        if (Boolean.TRUE.equals(subscription.getOnlyFollowedElderly())) {
+            List<Integer> followedIds = elderlyFollowMapper.getFollowedElderlyIds(userId);
+            context.followedElderlyIds = followedIds == null ? Collections.<Integer>emptyList() : followedIds;
+        } else {
+            context.followedElderlyIds = null;
+        }
+        return context;
+    }
+
+    private static class NotificationQueryContext {
+        private NotificationSubscription subscription;
+        private boolean subscriptionEnabled;
+        private List<String> notificationTypes;
+        private Boolean onlyAbnormal;
+        private Boolean onlyFollowedElderly;
+        private List<Integer> followedElderlyIds;
     }
 }

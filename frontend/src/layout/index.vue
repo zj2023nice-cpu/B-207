@@ -103,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
 
@@ -114,24 +114,10 @@ const unreadCount = ref(0)
 const announcementUnreadCount = ref(0)
 let timer = null
 
-const currentUserId = computed(() => {
-  const userStr = localStorage.getItem('user')
-  if (userStr) {
-    const user = JSON.parse(userStr)
-    return user.id
-  }
-  return null
-})
-
 const loadUnreadCount = async () => {
   try {
-    if (currentUserId.value) {
-      const res = await request.get(`/notification/count/with-subscription/${currentUserId.value}`)
-      unreadCount.value = res.data?.unreadCount || 0
-    } else {
-      const res = await request.get('/notification/count')
-      unreadCount.value = res.data?.unreadCount || 0
-    }
+    const res = await request.get('/notification/count/with-subscription')
+    unreadCount.value = res.data?.unreadCount || 0
   } catch {
     unreadCount.value = 0
   }
@@ -166,7 +152,7 @@ const loadCurrentUser = async () => {
 
 onMounted(() => {
   loadCurrentUser()
-  
+
   loadUnreadCount()
   loadAnnouncementUnreadCount()
   timer = setInterval(() => {

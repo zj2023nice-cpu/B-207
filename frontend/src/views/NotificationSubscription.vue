@@ -73,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import request from '../utils/request'
 import { ElMessage } from 'element-plus'
 
@@ -87,19 +87,9 @@ const formData = ref({
 const selectedTypes = ref([])
 const saving = ref(false)
 
-const userId = computed(() => {
-  const userStr = localStorage.getItem('user')
-  if (userStr) {
-    const user = JSON.parse(userStr)
-    return user.id
-  }
-  return null
-})
-
 const loadSubscription = async () => {
-  if (!userId.value) return
   try {
-    const res = await request.get(`/notification-subscription/${userId.value}`)
+    const res = await request.get('/notification-subscription')
     if (res.data) {
       formData.value = {
         enabled: res.data.enabled ?? true,
@@ -119,21 +109,15 @@ const loadSubscription = async () => {
 }
 
 const handleSave = async () => {
-  if (!userId.value) {
-    ElMessage.error('用户未登录')
-    return
-  }
-  
   saving.value = true
   try {
-    const typesStr = selectedTypes.value.join(',')
     const data = {
       ...formData.value,
-      notificationTypes: typesStr
+      notificationTypes: selectedTypes.value.join(',')
     }
-    await request.post(`/notification-subscription/${userId.value}`, data)
+    await request.post('/notification-subscription', data)
     ElMessage.success('配置保存成功')
-    loadSubscription()
+    await loadSubscription()
   } catch (e) {
     ElMessage.error('保存失败，请重试')
   } finally {

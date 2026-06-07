@@ -5,45 +5,52 @@ import com.smart.elderly.entity.Notification;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+
 import java.util.List;
 
 @Mapper
 public interface NotificationMapper extends BaseMapper<Notification> {
-    
-    @Select("SELECT n.*, e.name as elderly_name FROM notifications n " +
+
+    String BASE_SELECT = "SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
+            "CASE WHEN nr.id IS NOT NULL THEN 'READ' ELSE 'UNREAD' END AS status, n.created_at, n.read_at, e.name AS elderly_name ";
+
+    @Select(BASE_SELECT +
+            "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE (n.user_id IS NULL OR n.user_id = #{userId}) " +
             "ORDER BY n.created_at DESC")
-    List<Notification> findAllWithElderlyName();
-    
-    @Select("SELECT n.*, e.name as elderly_name FROM notifications n " +
+    List<Notification> findAllVisibleWithElderlyName(@Param("userId") Integer userId);
+
+    @Select("SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
+            "'UNREAD' AS status, n.created_at, n.read_at, e.name AS elderly_name " +
+            "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
-            "WHERE n.status = 'UNREAD' " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
             "ORDER BY n.created_at DESC")
-    List<Notification> findAllUnreadWithElderlyName();
-    
-    @Select("SELECT n.*, e.name as elderly_name FROM notifications n " +
+    List<Notification> findAllVisibleUnreadWithElderlyName(@Param("userId") Integer userId);
+
+    @Select(BASE_SELECT +
+            "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
-            "WHERE n.elderly_id = #{elderlyId} " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE (n.user_id IS NULL OR n.user_id = #{userId}) AND n.elderly_id = #{elderlyId} " +
             "ORDER BY n.created_at DESC")
-    List<Notification> findByElderlyIdWithName(Integer elderlyId);
-    
-    @Select("SELECT COUNT(*) FROM notifications WHERE status = 'UNREAD'")
-    long countAllUnread();
-    
-    @Select("SELECT * FROM notifications WHERE user_id = #{userId} ORDER BY created_at DESC")
-    List<Notification> findByUserId(Integer userId);
-    
-    @Select("SELECT * FROM notifications WHERE user_id = #{userId} AND status = 'UNREAD' ORDER BY created_at DESC")
-    List<Notification> findUnreadByUserId(Integer userId);
-    
-    @Select("SELECT COUNT(*) FROM notifications WHERE user_id = #{userId} AND status = 'UNREAD'")
-    long countUnreadByUserId(Integer userId);
-    
+    List<Notification> findVisibleByElderlyIdWithName(@Param("elderlyId") Integer elderlyId, @Param("userId") Integer userId);
+
+    @Select("SELECT COUNT(*) FROM notifications n " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId})")
+    long countVisibleUnread(@Param("userId") Integer userId);
+
     @Select("<script>" +
-            "SELECT n.*, e.name as elderly_name FROM notifications n " +
+            "SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
+            "CASE WHEN nr.id IS NOT NULL THEN 'READ' ELSE 'UNREAD' END AS status, n.created_at, n.read_at, e.name AS elderly_name " +
+            "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
-            "WHERE 1=1 " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE (n.user_id IS NULL OR n.user_id = #{userId}) " +
             "<if test='notificationTypes != null and notificationTypes.size() > 0'>" +
             "  AND n.notification_type IN " +
             "  <foreach item='type' collection='notificationTypes' open='(' separator=',' close=')'>" +
@@ -66,15 +73,19 @@ public interface NotificationMapper extends BaseMapper<Notification> {
             "ORDER BY n.created_at DESC" +
             "</script>")
     List<Notification> findAllWithSubscription(
+            @Param("userId") Integer userId,
             @Param("notificationTypes") List<String> notificationTypes,
             @Param("onlyAbnormal") Boolean onlyAbnormal,
             @Param("onlyFollowedElderly") Boolean onlyFollowedElderly,
             @Param("followedElderlyIds") List<Integer> followedElderlyIds);
-    
+
     @Select("<script>" +
-            "SELECT n.*, e.name as elderly_name FROM notifications n " +
+            "SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
+            "'UNREAD' AS status, n.created_at, n.read_at, e.name AS elderly_name " +
+            "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
-            "WHERE n.status = 'UNREAD' " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
             "<if test='notificationTypes != null and notificationTypes.size() > 0'>" +
             "  AND n.notification_type IN " +
             "  <foreach item='type' collection='notificationTypes' open='(' separator=',' close=')'>" +
@@ -97,14 +108,16 @@ public interface NotificationMapper extends BaseMapper<Notification> {
             "ORDER BY n.created_at DESC" +
             "</script>")
     List<Notification> findAllUnreadWithSubscription(
+            @Param("userId") Integer userId,
             @Param("notificationTypes") List<String> notificationTypes,
             @Param("onlyAbnormal") Boolean onlyAbnormal,
             @Param("onlyFollowedElderly") Boolean onlyFollowedElderly,
             @Param("followedElderlyIds") List<Integer> followedElderlyIds);
-    
+
     @Select("<script>" +
             "SELECT COUNT(*) FROM notifications n " +
-            "WHERE n.status = 'UNREAD' " +
+            "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
+            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
             "<if test='notificationTypes != null and notificationTypes.size() > 0'>" +
             "  AND n.notification_type IN " +
             "  <foreach item='type' collection='notificationTypes' open='(' separator=',' close=')'>" +
@@ -126,17 +139,9 @@ public interface NotificationMapper extends BaseMapper<Notification> {
             "</if>" +
             "</script>")
     long countAllUnreadWithSubscription(
+            @Param("userId") Integer userId,
             @Param("notificationTypes") List<String> notificationTypes,
             @Param("onlyAbnormal") Boolean onlyAbnormal,
             @Param("onlyFollowedElderly") Boolean onlyFollowedElderly,
             @Param("followedElderlyIds") List<Integer> followedElderlyIds);
-    
-    @Update("UPDATE notifications SET status = 'READ', read_at = NOW() WHERE id = #{id}")
-    void markAsRead(Integer id);
-    
-    @Update("UPDATE notifications SET status = 'READ', read_at = NOW() WHERE user_id = #{userId} AND status = 'UNREAD'")
-    void markAllAsRead(Integer userId);
-    
-    @Update("UPDATE notifications SET status = 'READ', read_at = NOW() WHERE status = 'UNREAD'")
-    void markAllSystemAsRead();
 }
