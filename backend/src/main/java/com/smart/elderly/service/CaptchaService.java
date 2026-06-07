@@ -13,16 +13,16 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class CaptchaService {
 
-    private static final String CAPTCHA_PREFIX = "captcha:";
-    private static final long CAPTCHA_EXPIRE_MINUTES = 5;
+    static final String CAPTCHA_PREFIX = "captcha:";
+    static final long CAPTCHA_EXPIRE_MINUTES = 5;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
     public Map<String, String> generateCaptcha() {
-        String code = CaptchaUtil.generateCode();
-        String uuid = UUID.randomUUID().toString().replace("-", "");
-        String base64Image = CaptchaUtil.generateCaptchaBase64(code);
+        String code = generateCode();
+        String uuid = generateUuid();
+        String base64Image = generateCaptchaImage(code);
 
         stringRedisTemplate.opsForValue().set(CAPTCHA_PREFIX + uuid, code.toLowerCase(), CAPTCHA_EXPIRE_MINUTES, TimeUnit.MINUTES);
 
@@ -42,5 +42,17 @@ public class CaptchaService {
         }
         stringRedisTemplate.delete(CAPTCHA_PREFIX + uuid);
         return storedCode.equals(code.toLowerCase());
+    }
+
+    String generateCode() {
+        return CaptchaUtil.generateCode();
+    }
+
+    String generateUuid() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    String generateCaptchaImage(String code) {
+        return CaptchaUtil.generateCaptchaBase64(code);
     }
 }
