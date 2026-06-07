@@ -1,5 +1,6 @@
 package com.smart.elderly.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smart.elderly.entity.HealthWarningRecord;
 import com.smart.elderly.entity.Notification;
@@ -137,6 +138,28 @@ public class NotificationService extends ServiceImpl<NotificationMapper, Notific
 
         this.save(notification);
         return notification;
+    }
+
+    @Transactional
+    public int invalidateNotificationsByWarningIds(List<Integer> warningRecordIds, Integer correctionId, String reason) {
+        if (warningRecordIds == null || warningRecordIds.isEmpty()) {
+            return 0;
+        }
+        LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(Notification::getWarningRecordId, warningRecordIds);
+        List<Notification> notifications = this.list(wrapper);
+        
+        int count = 0;
+        for (Notification notification : notifications) {
+            notification.setInvalidated(true);
+            notification.setInvalidatedAt(LocalDateTime.now());
+            notification.setInvalidatedReason(reason);
+            notification.setInvalidatedByCorrectionId(correctionId);
+            if (this.updateById(notification)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private NotificationQueryContext buildQueryContext(Integer userId) {

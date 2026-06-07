@@ -9,6 +9,20 @@ ADD COLUMN IF NOT EXISTS corrected_at TIMESTAMP NULL COMMENT '更正时间',
 ADD COLUMN IF NOT EXISTS corrected_by VARCHAR(50) NULL COMMENT '更正人',
 ADD COLUMN IF NOT EXISTS latest_correction_id INT NULL COMMENT '最新更正记录ID';
 
+-- 2. 扩展健康预警记录表，支持 INVALIDATED 状态
+ALTER TABLE health_warning_records 
+ADD COLUMN IF NOT EXISTS invalidated_by_correction_id INT NULL COMMENT '导致该预警失效的更正记录ID',
+ADD INDEX IF NOT EXISTS idx_invalidated_by_correction_id (invalidated_by_correction_id);
+
+-- 3. 扩展通知表，支持失效标记
+ALTER TABLE notifications 
+ADD COLUMN IF NOT EXISTS invalidated BOOLEAN DEFAULT FALSE COMMENT '是否已失效（因健康记录更正）',
+ADD COLUMN IF NOT EXISTS invalidated_at TIMESTAMP NULL COMMENT '失效时间',
+ADD COLUMN IF NOT EXISTS invalidated_reason VARCHAR(255) NULL COMMENT '失效原因',
+ADD COLUMN IF NOT EXISTS invalidated_by_correction_id INT NULL COMMENT '导致该通知失效的更正记录ID',
+ADD INDEX IF NOT EXISTS idx_invalidated (invalidated),
+ADD INDEX IF NOT EXISTS idx_invalidated_by_correction_id (invalidated_by_correction_id);
+
 -- 2. 创建健康记录更正表
 CREATE TABLE IF NOT EXISTS health_record_corrections (
     id INT AUTO_INCREMENT PRIMARY KEY,

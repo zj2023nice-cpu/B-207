@@ -37,6 +37,8 @@ public class HealthWarningRecord {
     private String handledBy;
     
     private String handleRemark;
+    
+    private Integer invalidatedByCorrectionId;
 
     @TableField(exist = false)
     private String elderlyName;

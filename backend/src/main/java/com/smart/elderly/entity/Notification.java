@@ -30,6 +30,11 @@ public class Notification {
     private LocalDateTime createdAt;
     
     private LocalDateTime readAt;
+    
+    private Boolean invalidated;
+    private LocalDateTime invalidatedAt;
+    private String invalidatedReason;
+    private Integer invalidatedByCorrectionId;
 
     @TableField(exist = false)
     private String elderlyName;

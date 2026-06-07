@@ -12,22 +12,28 @@ import java.util.List;
 public interface NotificationMapper extends BaseMapper<Notification> {
 
     String BASE_SELECT = "SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
-            "CASE WHEN nr.id IS NOT NULL THEN 'READ' ELSE 'UNREAD' END AS status, n.created_at, n.read_at, e.name AS elderly_name ";
+            "CASE WHEN nr.id IS NOT NULL THEN 'READ' ELSE 'UNREAD' END AS status, n.created_at, n.read_at, e.name AS elderly_name, " +
+            "n.invalidated, n.invalidated_at, n.invalidated_reason ";
+
+    String NOT_INVALIDATED = "AND (n.invalidated IS NULL OR n.invalidated = FALSE) ";
 
     @Select(BASE_SELECT +
             "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
             "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
             "WHERE (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            NOT_INVALIDATED +
             "ORDER BY n.created_at DESC")
     List<Notification> findAllVisibleWithElderlyName(@Param("userId") Integer userId);
 
     @Select("SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
-            "'UNREAD' AS status, n.created_at, n.read_at, e.name AS elderly_name " +
+            "'UNREAD' AS status, n.created_at, n.read_at, e.name AS elderly_name, " +
+            "n.invalidated, n.invalidated_at, n.invalidated_reason " +
             "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
             "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
             "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            NOT_INVALIDATED +
             "ORDER BY n.created_at DESC")
     List<Notification> findAllVisibleUnreadWithElderlyName(@Param("userId") Integer userId);
 
@@ -36,21 +42,25 @@ public interface NotificationMapper extends BaseMapper<Notification> {
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
             "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
             "WHERE (n.user_id IS NULL OR n.user_id = #{userId}) AND n.elderly_id = #{elderlyId} " +
+            NOT_INVALIDATED +
             "ORDER BY n.created_at DESC")
     List<Notification> findVisibleByElderlyIdWithName(@Param("elderlyId") Integer elderlyId, @Param("userId") Integer userId);
 
     @Select("SELECT COUNT(*) FROM notifications n " +
             "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
-            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId})")
+            "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            NOT_INVALIDATED)
     long countVisibleUnread(@Param("userId") Integer userId);
 
     @Select("<script>" +
             "SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
-            "CASE WHEN nr.id IS NOT NULL THEN 'READ' ELSE 'UNREAD' END AS status, n.created_at, n.read_at, e.name AS elderly_name " +
+            "CASE WHEN nr.id IS NOT NULL THEN 'READ' ELSE 'UNREAD' END AS status, n.created_at, n.read_at, e.name AS elderly_name, " +
+            "n.invalidated, n.invalidated_at, n.invalidated_reason " +
             "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
             "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
             "WHERE (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            "AND (n.invalidated IS NULL OR n.invalidated = FALSE) " +
             "<if test='notificationTypes != null and notificationTypes.size() > 0'>" +
             "  AND n.notification_type IN " +
             "  <foreach item='type' collection='notificationTypes' open='(' separator=',' close=')'>" +
@@ -81,11 +91,13 @@ public interface NotificationMapper extends BaseMapper<Notification> {
 
     @Select("<script>" +
             "SELECT n.id, n.user_id, n.elderly_id, n.warning_record_id, n.title, n.content, n.notification_type, " +
-            "'UNREAD' AS status, n.created_at, n.read_at, e.name AS elderly_name " +
+            "'UNREAD' AS status, n.created_at, n.read_at, e.name AS elderly_name, " +
+            "n.invalidated, n.invalidated_at, n.invalidated_reason " +
             "FROM notifications n " +
             "LEFT JOIN elderly e ON n.elderly_id = e.id " +
             "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
             "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            "AND (n.invalidated IS NULL OR n.invalidated = FALSE) " +
             "<if test='notificationTypes != null and notificationTypes.size() > 0'>" +
             "  AND n.notification_type IN " +
             "  <foreach item='type' collection='notificationTypes' open='(' separator=',' close=')'>" +
@@ -118,6 +130,7 @@ public interface NotificationMapper extends BaseMapper<Notification> {
             "SELECT COUNT(*) FROM notifications n " +
             "LEFT JOIN notification_read_records nr ON nr.notification_id = n.id AND nr.user_id = #{userId} " +
             "WHERE nr.id IS NULL AND (n.user_id IS NULL OR n.user_id = #{userId}) " +
+            "AND (n.invalidated IS NULL OR n.invalidated = FALSE) " +
             "<if test='notificationTypes != null and notificationTypes.size() > 0'>" +
             "  AND n.notification_type IN " +
             "  <foreach item='type' collection='notificationTypes' open='(' separator=',' close=')'>" +

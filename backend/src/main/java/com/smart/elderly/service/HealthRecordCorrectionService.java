@@ -32,6 +32,9 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
     @Autowired
     private HealthWarningRecordService warningRecordService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     public List<HealthRecordCorrection> getByHealthRecordId(Integer healthRecordId) {
         return baseMapper.findByHealthRecordIdWithName(healthRecordId);
     }
@@ -129,7 +132,7 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
         originalRecord.setLatestCorrectionId(correction.getId());
         healthRecordService.updateById(originalRecord);
 
-        invalidateOldWarnings(dto.getHealthRecordId());
+        invalidateOldWarnings(dto.getHealthRecordId(), correction.getId());
 
         if (!pendingWarnings.isEmpty()) {
             for (HealthRecordService.WarningInfo info : pendingWarnings) {
@@ -289,19 +292,30 @@ public class HealthRecordCorrectionService extends ServiceImpl<HealthRecordCorre
         return isAbnormal;
     }
 
-    private void invalidateOldWarnings(Integer healthRecordId) {
+    private void invalidateOldWarnings(Integer healthRecordId, Integer correctionId) {
         LambdaQueryWrapper<HealthWarningRecord> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HealthWarningRecord::getHealthRecordId, healthRecordId);
         List<HealthWarningRecord> oldWarnings = warningRecordService.list(wrapper);
         
+        List<Integer> oldWarningIds = new ArrayList<>();
         for (HealthWarningRecord oldWarning : oldWarnings) {
+            oldWarningIds.add(oldWarning.getId());
             if (!"HANDLED".equals(oldWarning.getStatus())) {
                 oldWarning.setStatus("INVALIDATED");
                 oldWarning.setHandleRemark("因健康记录更正而失效");
                 oldWarning.setHandledAt(LocalDateTime.now());
                 oldWarning.setHandledBy("system");
+                oldWarning.setInvalidatedByCorrectionId(correctionId);
                 warningRecordService.updateById(oldWarning);
             }
+        }
+
+        if (!oldWarningIds.isEmpty()) {
+            notificationService.invalidateNotificationsByWarningIds(
+                oldWarningIds, 
+                correctionId, 
+                "因健康记录更正而失效"
+            );
         }
     }
 }
