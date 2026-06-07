@@ -71,6 +71,10 @@
             <el-icon><Tickets /></el-icon>
             <span>交接班记录</span>
           </el-menu-item>
+          <el-menu-item index="/export-task">
+            <el-icon><Download /></el-icon>
+            <span>导出任务中心</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>

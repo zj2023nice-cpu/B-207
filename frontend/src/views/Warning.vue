@@ -10,9 +10,13 @@
               <el-option label="已读" value="READ" />
               <el-option label="已处理" value="HANDLED" />
             </el-select>
-            <el-button type="primary" @click="loadWarnings">
+            <el-button type="primary" @click="loadWarnings" style="margin-right: 10px;">
               <el-icon><Refresh /></el-icon>
               刷新
+            </el-button>
+            <el-button type="primary" @click="handleExport">
+              <el-icon><Download /></el-icon>
+              导出数据
             </el-button>
           </div>
         </div>
@@ -109,8 +113,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage } from 'element-plus'
+
+const router = useRouter()
 
 const loading = ref(false)
 const filterStatus = ref(null)
@@ -200,6 +207,29 @@ const submitHandle = async () => {
   ElMessage.success('处理成功')
   handleDialogVisible.value = false
   loadWarnings()
+}
+
+const handleExport = async () => {
+  try {
+    const exportParams = JSON.stringify({
+      status: filterStatus.value
+    })
+    let rangeDesc = '全部预警记录'
+    if (filterStatus.value) {
+      rangeDesc = `状态: ${getStatusName(filterStatus.value)}`
+    }
+    const res = await request.post('/export-task/create', {
+      exportType: 'WARNING_RECORD',
+      exportParams: exportParams,
+      exportRangeDesc: rangeDesc,
+      taskName: '预警记录导出'
+    })
+    ElMessage.success('导出任务已创建，请在导出任务中心查看进度')
+    router.push('/export-task')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('创建导出任务失败')
+  }
 }
 
 onMounted(() => {

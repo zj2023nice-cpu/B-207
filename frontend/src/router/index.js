@@ -101,6 +101,12 @@ const routes = [
                 name: 'Profile',
                 component: () => import('../views/Profile.vue'),
                 meta: { title: '个人资料与安全设置' }
+            },
+            {
+                path: 'export-task',
+                name: 'ExportTask',
+                component: () => import('../views/ExportTask.vue'),
+                meta: { title: '数据导出任务中心' }
             }
         ]
     }

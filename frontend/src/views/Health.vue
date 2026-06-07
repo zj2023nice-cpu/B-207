@@ -69,6 +69,10 @@
           <template #header>
             <div class="card-header">
               <span>历史健康记录</span>
+              <el-button type="primary" size="small" @click="handleExport">
+                <el-icon><Download /></el-icon>
+                导出数据
+              </el-button>
             </div>
           </template>
           <el-table :data="historyData" border style="width: 100%" v-loading="loading" max-height="400">
@@ -129,9 +133,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import request from '../utils/request'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
+
+const router = useRouter()
 
 const loading = ref(false)
 const chartLoading = ref(false)
@@ -384,6 +391,23 @@ onMounted(() => {
   loadHistory()
   initChart()
 })
+
+const handleExport = async () => {
+  try {
+    const exportParams = JSON.stringify({})
+    const res = await request.post('/export-task/create', {
+      exportType: 'HEALTH_RECORD',
+      exportParams: exportParams,
+      exportRangeDesc: '全部健康记录',
+      taskName: '健康记录导出'
+    })
+    ElMessage.success('导出任务已创建，请在导出任务中心查看进度')
+    router.push('/export-task')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('创建导出任务失败')
+  }
+}
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)

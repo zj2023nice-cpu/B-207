@@ -35,6 +35,10 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
+            <el-button type="primary" @click="handleExport" style="margin-left: 10px;">
+              <el-icon><Download /></el-icon>
+              导出数据
+            </el-button>
           </div>
         </div>
       </template>
@@ -522,6 +526,34 @@ const goToNursingObservationFromDetail = () => {
       path: '/nursing-observation',
       query: { elderlyId: currentDetail.value.elderly.id }
     })
+  }
+}
+
+const handleExport = async () => {
+  try {
+    const exportParams = JSON.stringify({
+      tagId: selectedTagId.value,
+      keyword: keyword.value
+    })
+    let rangeDesc = '全部老人'
+    if (selectedTagId.value) {
+      const tag = tagList.value.find(t => t.id === selectedTagId.value)
+      rangeDesc = tag ? `标签: ${tag.name}` : '按标签筛选'
+    }
+    if (keyword.value) {
+      rangeDesc += `，关键词: ${keyword.value}`
+    }
+    const res = await request.post('/export-task/create', {
+      exportType: 'ELDERLY',
+      exportParams: exportParams,
+      exportRangeDesc: rangeDesc,
+      taskName: '老人数据导出'
+    })
+    ElMessage.success('导出任务已创建，请在导出任务中心查看进度')
+    router.push('/export-task')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('创建导出任务失败')
   }
 }
 </script>
